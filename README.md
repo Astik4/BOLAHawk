@@ -1,148 +1,191 @@
 # BOLAHawk 🦅
 
-> **Automated API Security Testing Platform** — Scan REST APIs for OWASP API Top 10 vulnerabilities, score findings with CVSS, and generate professional PDF/HTML reports in seconds.
+> An automated API security scanner that hunts down OWASP API Top 10 vulnerabilities, scores every finding with CVSS v3.1, and hands you a professional PDF report — all from a single scan.
 
 ---
 
-## 📖 Overview
+## What is BOLAHawk?
 
-**BOLAHawk** is an open-source, automated security auditing tool built for developers, security engineers, and penetration testers who need fast, reliable REST API vulnerability assessments.
+If you've ever shipped a REST API and wondered *"is this thing actually secure?"* — BOLAHawk is the answer.
 
-It targets the [OWASP API Security Top 10](https://owasp.org/API-Security/), with deep coverage of:
+Most security tools are either too complex to set up, too generic to be useful, or they produce walls of raw output that take hours to make sense of. BOLAHawk was built to fix that. Point it at an API, click scan, and within seconds you get a clean, structured report telling you exactly what's broken, how bad it is, and where it lives.
 
-| Vulnerability | OWASP Category | Severity |
+The name comes from **BOLA** — Broken Object Level Authorization — which is the #1 vulnerability in the OWASP API Security Top 10. It's also one of the most commonly missed issues in real-world APIs, because it doesn't look broken from the outside. A user can log in fine, endpoints respond correctly, but underneath, one user can quietly access another user's data just by changing an ID in the URL. BOLAHawk specifically hunts for this — and a lot more.
+
+Under the hood, BOLAHawk:
+- Logs in as **multiple test users** and builds an authentication matrix
+- Fires cross-user requests across every API endpoint it knows about
+- Checks whether object-level authorization is enforced (BOLA), function-level access is gated (BFLA), fields are protected from mass assignment, rate limiting is in place, and JWT tokens are handled correctly
+- Assigns each finding a **CVSS v3.1 score** — the same standard used by security advisories and CVEs
+- Compiles everything into a readable **HTML or downloadable PDF report**
+
+It ships with a **deliberately vulnerable Flask API** so you can run real scans against real broken code right out of the box — no need to risk scanning something you shouldn't.
+
+---
+
+## Why it matters
+
+APIs are the backbone of modern software, and they're also the most actively exploited attack surface. The [OWASP API Security Top 10](https://owasp.org/API-Security/) exists because these vulnerabilities show up again and again — in startups, in enterprises, in apps used by millions of people.
+
+The problem isn't that developers don't care. It's that:
+- Manual testing is slow and inconsistent
+- Most existing tools focus on web apps, not APIs specifically
+- BOLA-type bugs are nearly invisible without cross-user testing
+
+BOLAHawk automates the hard part. It sets up the test matrix, fires the cross-authenticated requests, interprets the responses, and scores the severity — so you can focus on fixing issues rather than finding them.
+
+---
+
+## Vulnerabilities Covered
+
+| Vulnerability | OWASP Category | What BOLAHawk checks |
 |---|---|---|
-| Broken Object Level Authorization | API1:2023 BOLA | Critical |
-| Broken Function Level Authorization | API5:2023 BFLA | High |
-| Mass Assignment | API6:2023 | High |
-| Missing / Broken Rate Limiting | API4:2023 | Medium |
-| Broken Authentication / JWT Flaws | API2:2023 | Critical |
+| Broken Object Level Authorization (BOLA) | API1:2023 | Can User A access User B's resources by changing an ID? |
+| Broken Function Level Authorization (BFLA) | API5:2023 | Can a regular user call admin-only endpoints? |
+| Mass Assignment | API6:2023 | Does the API blindly accept unexpected fields in a request body? |
+| Missing Rate Limiting | API4:2023 | Can the same endpoint be hammered with requests without any throttle? |
+| Broken Authentication / JWT Flaws | API2:2023 | Are tokens validated correctly? Can they be tampered with? |
 
-Each finding is automatically scored using the **CVSS v3.1** scoring system and compiled into a structured HTML or PDF report — no manual effort required.
-
----
-
-## ✨ Features
-
-- 🔍 **Multi-vector scanning** — Tests BOLA, BFLA, Mass Assignment, Rate Limiting, and JWT vulnerabilities in a single scan
-- 📊 **CVSS v3.1 scoring** — Every finding receives an industry-standard severity score
-- 📄 **Dual report formats** — Download findings as HTML (Jinja2) or PDF (ReportLab) reports
-- 🔐 **Multi-user auth matrix** — Simulates cross-owner access using multiple test identities
-- ⚡ **FastAPI backend** — High-performance async scanning engine with auto-generated OpenAPI docs
-- 🖥️ **React dashboard** — Real-time scan orchestration and findings review via browser UI
-- 🐳 **Docker-first** — One command to spin up the full stack locally
-- 🎯 **Built-in vulnerable target** — Includes a deliberately flawed Flask API for safe, realistic testing
+Each detected issue is given a **CVSS v3.1 base score** with a breakdown of the exploitability and impact metrics — the same format you'd see in a professional security audit.
 
 ---
 
-## 🏗️ Architecture
+## Features
+
+- 🔍 **Automated multi-vector scanning** — runs all vulnerability checks in a single scan session, no configuration per test needed
+- 👥 **Multi-user auth matrix** — logs in as multiple identities and cross-tests access between them to catch authorization flaws
+- 📊 **CVSS v3.1 scoring** — every finding gets an industry-standard severity score, not just a vague "high/medium/low"
+- 📄 **Dual report formats** — export findings as a clean HTML page or a downloadable PDF with full details
+- ⚡ **FastAPI backend** — async scanning engine with auto-generated interactive API docs at `/docs`
+- 🖥️ **React dashboard** — browser-based UI to kick off scans and review results without touching the terminal
+- 🐳 **Docker-first setup** — one command spins up the entire stack, no environment fiddling required
+- 🎯 **Built-in vulnerable target** — comes with a deliberately broken Flask API so you can test against real vulnerabilities safely
+
+---
+
+## How It Works (High Level)
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                     React Dashboard                     │
+│               (Trigger scans, view findings)            │
+└────────────────────────┬────────────────────────────────┘
+                         │ POST /api/scans
+                         ▼
+┌─────────────────────────────────────────────────────────┐
+│                   FastAPI Backend                       │
+│  ┌──────────────┐   ┌─────────────────────────────┐    │
+│  │ Auth Manager │   │    Security Orchestrator    │    │
+│  │ (token store)│──▶│  BOLA · BFLA · MassAssign   │    │
+│  └──────────────┘   │  RateLimit · JWT checks     │    │
+│                     └──────────────┬────────────── ┘    │
+│                                    │                    │
+│                     ┌──────────────▼────────────────┐   │
+│                     │   CVSS Scorer + Report Gen    │   │
+│                     │   (HTML via Jinja2 / PDF)     │   │
+│                     └───────────────────────────────┘   │
+└─────────────────────────────────────────────────────────┘
+                         │
+                         ▼ HTTP requests
+┌─────────────────────────────────────────────────────────┐
+│              Vulnerable Target API (Flask)              │
+│     (Intentionally broken — safe sandbox for testing)  │
+└─────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Project Structure
 
 ```
 BOLAHawk/
-├── backend/                  # FastAPI scanning engine + report generator
+├── backend/                        # FastAPI scanning engine + report generator
 │   ├── app/
-│   │   ├── main.py           # API routes and CORS config
-│   │   ├── auth_manager.py   # Multi-user token acquisition
-│   │   ├── config.py         # Environment-based configuration
-│   │   ├── token_store.py    # In-memory token cache
+│   │   ├── main.py                 # API routes, CORS config, app entrypoint
+│   │   ├── auth_manager.py         # Acquires and manages tokens for test users
+│   │   ├── config.py               # Environment-based configuration (reads .env)
+│   │   ├── token_store.py          # In-memory token cache per user session
 │   │   ├── scanner/
-│   │   │   ├── engine.py              # Scan orchestration core
-│   │   │   ├── security_orchestrator.py  # Coordinates all security checks
-│   │   │   ├── request_runner.py      # HTTP request executor
-│   │   │   ├── endpoint_loader.py     # API endpoint definitions loader
-│   │   │   └── security_tests/        # Individual vulnerability modules
-│   │   │       ├── checks/            # BOLA, BFLA, mass-assignment, rate-limit, JWT
-│   │   │       ├── cvss.py            # CVSS v3.1 scoring calculator
-│   │   │       ├── models.py          # Finding data models
-│   │   │       └── runner.py          # Test execution runner
-│   │   └── reporting/                 # HTML + PDF report templates & generators
+│   │   │   ├── engine.py           # Top-level scan orchestration
+│   │   │   ├── security_orchestrator.py  # Runs all security check modules
+│   │   │   ├── request_runner.py   # Fires authenticated HTTP requests
+│   │   │   ├── endpoint_loader.py  # Loads API endpoint definitions
+│   │   │   └── security_tests/
+│   │   │       ├── checks/         # Individual modules: BOLA, BFLA, mass-assign, rate-limit, JWT
+│   │   │       ├── cvss.py         # CVSS v3.1 score calculator
+│   │   │       ├── models.py       # Finding data models (structured output)
+│   │   │       └── runner.py       # Executes each check and collects results
+│   │   └── reporting/              # Report templates and PDF/HTML generators
 │   ├── requirements.txt
 │   └── Dockerfile
-├── frontend/                 # React + Vite dashboard
-│   ├── src/
+│
+├── frontend/                       # React + Vite dashboard
+│   ├── src/                        # Components, pages, API hooks
 │   └── vite.config.js
-├── vulnerable-target-api/    # Deliberately flawed Flask API (demo target)
-│   ├── app.py
-│   ├── routes/
-│   ├── models.py
+│
+├── vulnerable-target-api/          # Deliberately flawed Flask API (the scan target)
+│   ├── app.py                      # Flask app entrypoint
+│   ├── routes/                     # Endpoints with planted vulnerabilities
+│   ├── models.py                   # SQLite-backed data models
 │   └── Dockerfile
-├── docs/                     # Design docs and planted vulnerability inventory
-├── docker-compose.yml
-└── DEPLOYMENT.md
+│
+├── docs/                           # Design docs and planted vulnerability inventory
+├── docker-compose.yml              # Wires backend + target API together
+└── DEPLOYMENT.md                   # Full hosting and deployment guide
 ```
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
-### Prerequisites
+### What you'll need
 
-| Tool | Version |
-|---|---|
-| Docker & Docker Compose | 20.x+ |
-| Node.js | 18.x+ |
-| Python | 3.11+ (for local dev only) |
+| Tool | Version | Why |
+|---|---|---|
+| Docker & Docker Compose | 20.x+ | Runs the full stack with one command |
+| Node.js | 18.x+ | For the React dashboard |
+| Python | 3.11+ | Only needed for local (non-Docker) dev |
 
 ---
 
 ### Option 1 — Docker (Recommended)
 
-The fastest way to get the full stack running:
+This is the simplest way. Docker handles the backend and the vulnerable target API together. You just need to run the frontend separately since it's a dev server.
 
 ```bash
-# Clone the repository
+# Clone the repo
 git clone https://github.com/Astik4/BOLAHawk.git
 cd BOLAHawk
 
-# Start the backend + vulnerable target API
+# Build and start the backend + target API
 docker compose up --build
 ```
 
-Services available after startup:
+Once it's running, you'll have:
 
-| Service | URL | Description |
+| Service | URL | What it is |
 |---|---|---|
-| Vulnerable Target API | http://localhost:5000 | Flask API with planted vulnerabilities |
-| Backend / Scanner API | http://localhost:8000 | FastAPI scanning engine |
-| API Documentation | http://localhost:8000/docs | Interactive OpenAPI (Swagger) UI |
+| Vulnerable Target API | http://localhost:5000 | The broken Flask API you'll be scanning |
+| Backend / Scanner | http://localhost:8000 | The FastAPI engine that runs the scans |
+| Interactive API Docs | http://localhost:8000/docs | Swagger UI — explore or test endpoints directly |
 
-Then start the frontend separately:
+Now start the dashboard:
 
 ```bash
 cd frontend
 npm install
 npm run dev
-# Dashboard: http://localhost:5173
 ```
+
+Open **http://localhost:5173** and you're ready to scan. 🎉
 
 ---
 
-### Option 2 — Local Development (No Docker)
+### Option 2 — Local Dev (No Docker)
 
-**1. Backend**
+If you'd rather run everything directly, here's how to wire each piece up.
 
-```bash
-cd backend
-
-# Create and activate a virtual environment
-python -m venv .venv
-# Windows:
-.venv\Scripts\activate
-# macOS/Linux:
-source .venv/bin/activate
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Copy and configure environment variables
-cp .env.example .env
-# Edit .env if needed (defaults work for local dev)
-
-# Start the backend
-uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
-```
-
-**2. Vulnerable Target API**
+**Step 1 — Start the vulnerable target API**
 
 ```bash
 cd vulnerable-target-api
@@ -151,7 +194,31 @@ python app.py
 # Runs at http://127.0.0.1:5000
 ```
 
-**3. Frontend**
+**Step 2 — Start the backend scanner**
+
+```bash
+cd backend
+
+# Set up a virtual environment
+python -m venv .venv
+
+# Activate it
+# Windows:
+.venv\Scripts\activate
+# macOS/Linux:
+source .venv/bin/activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Copy the example env file (defaults work out of the box)
+cp .env.example .env
+
+# Start the server
+uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+```
+
+**Step 3 — Start the frontend**
 
 ```bash
 cd frontend
@@ -162,49 +229,58 @@ npm run dev
 
 ---
 
-## ⚙️ Environment Variables
+## Environment Variables
 
-Create a `.env` file in `backend/` (copy from `.env.example`):
+The backend reads from a `.env` file. Copy the example and you're good to go for local dev — the defaults work without any changes.
+
+```bash
+cp backend/.env.example backend/.env
+```
 
 ```env
-# Backend server settings
+# Where the backend listens
 HOST=127.0.0.1
 PORT=8000
 
-# URL of the API to scan (Docker Compose sets this automatically)
+# The API that BOLAHawk will scan
 TARGET_API_URL=http://127.0.0.1:5000
 ```
 
-> **Note:** When using Docker Compose, `TARGET_API_URL` is automatically set to `http://target-api:5000` via Docker's internal DNS — no manual `.env` configuration needed.
+> **Docker users:** When running via `docker compose`, `TARGET_API_URL` is automatically set to `http://target-api:5000` using Docker's internal DNS. You don't need to touch `.env` at all.
 
 ---
 
-## 🔬 Running a Scan
+## Running a Scan
 
-1. Open the dashboard at **http://localhost:5173**
-2. Click **"Start Scan"** to trigger a full security audit against the target API
-3. View real-time results as findings come in
-4. Download the **HTML** or **PDF** report from the scan results page
+**From the dashboard:**
 
-You can also trigger scans directly via the API:
+1. Open **http://localhost:5173**
+2. Hit **"Start Scan"**
+3. Watch findings populate in real time
+4. Click a finding to expand it and see the CVSS score and details
+5. Download your report as **HTML** or **PDF**
+
+**From the terminal (curl):**
 
 ```bash
-# Start a scan
+# Kick off a scan
 curl -X POST http://localhost:8000/api/scans
 
-# Poll scan status
+# Check the scan status (use the id from the response above)
 curl http://localhost:8000/api/scans/{scan_id}
 
-# Download HTML report
+# Get the HTML report
 curl http://localhost:8000/api/scans/{scan_id}/report.html -o report.html
 
-# Download PDF report
+# Get the PDF report
 curl http://localhost:8000/api/scans/{scan_id}/report.pdf -o report.pdf
 ```
 
+The scan typically completes in a few seconds. The report breaks down every finding with its endpoint, the request that triggered it, and the CVSS v3.1 score with severity classification.
+
 ---
 
-## 🧪 Running Tests
+## Running Tests
 
 ```bash
 cd backend
@@ -213,67 +289,68 @@ pytest
 
 ---
 
-## ☁️ Deployment
+## Deployment
 
-See [DEPLOYMENT.md](./DEPLOYMENT.md) for full production deployment instructions including:
+Full hosting instructions are in [DEPLOYMENT.md](./DEPLOYMENT.md), covering:
 
-- **Docker Compose** (local / self-hosted)
-- **Render / Railway** (backend + target API)
-- **Vercel** (frontend)
+- **Docker Compose** — for local or self-hosted setups
+- **Render / Railway** — for hosting the backend and target API in the cloud
+- **Vercel** — for deploying the React frontend
 
-> ⚠️ **Important:** The `vulnerable-target-api` is intentionally insecure and must **never** be exposed publicly. Always deploy it on a private/internal network or behind strict network rules.
-
----
-
-## 🛠️ Tech Stack
-
-| Layer | Technology |
-|---|---|
-| Backend / Scanner | Python 3.11, FastAPI, Uvicorn |
-| Auth & JWT testing | PyJWT |
-| Report Generation | Jinja2 (HTML), ReportLab (PDF) |
-| HTTP Client | HTTPX |
-| Vulnerable Target | Python, Flask, SQLite |
-| Frontend | React, Vite, Recharts |
-| Containerization | Docker, Docker Compose |
+> ⚠️ **Security note:** The `vulnerable-target-api` is intentionally broken by design. It must **never** be exposed on the public internet. If you're deploying to the cloud, keep it on a private/internal network and only let the backend reach it.
 
 ---
 
-## 📂 API Reference
+## Tech Stack
 
-Full interactive documentation is available at **http://localhost:8000/docs** when the backend is running.
+| Layer | Technology | Why this choice |
+|---|---|---|
+| Backend / Scanner | Python 3.11, FastAPI, Uvicorn | Fast async runtime, great for concurrent HTTP testing |
+| Auth & JWT testing | PyJWT | Lightweight JWT encode/decode for simulating flawed token flows |
+| Report Generation | Jinja2 (HTML), ReportLab (PDF) | Jinja for readable templates, ReportLab for portable PDF output |
+| HTTP Client | HTTPX | Async-native HTTP client — pairs naturally with FastAPI |
+| Vulnerable Target | Python, Flask, SQLite | Minimal setup, easy to plant vulnerabilities deliberately |
+| Frontend | React, Vite, Recharts | Snappy dev experience, good charting for findings visualization |
+| Containerization | Docker, Docker Compose | Reproducible environments, easy one-command startup |
 
-Key endpoints:
+---
+
+## API Reference
+
+The full interactive API documentation is available at **http://localhost:8000/docs** while the backend is running. You can explore endpoints, fire test requests, and inspect response schemas right from the browser.
+
+Core endpoints:
 
 | Method | Endpoint | Description |
 |---|---|---|
 | `POST` | `/api/scans` | Start a new security scan |
-| `GET` | `/api/scans/{id}` | Get scan status and findings |
-| `GET` | `/api/scans/{id}/report.html` | Download HTML report |
-| `GET` | `/api/scans/{id}/report.pdf` | Download PDF report |
+| `GET` | `/api/scans/{id}` | Get scan status, progress, and findings |
+| `GET` | `/api/scans/{id}/report.html` | Render findings as an HTML report |
+| `GET` | `/api/scans/{id}/report.pdf` | Download findings as a PDF report |
 
 ---
 
-## 🤝 Contributing
+## Contributing
 
-Contributions are welcome! To get started:
+Contributions are genuinely welcome — whether it's a new vulnerability check, a better report format, or just fixing a typo.
 
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feat/your-feature`
-3. Commit your changes with clear messages
-4. Open a Pull Request
+1. Fork the repo
+2. Create a branch: `git checkout -b feat/your-feature-name`
+3. Make your changes and write tests if relevant
+4. Open a Pull Request with a clear description of what and why
 
-Please ensure all tests pass before submitting a PR.
-
----
-
-## ⚖️ License
-
-This project is intended for **authorized security testing and educational purposes only**.  
-Do not run scans against APIs you do not own or have explicit permission to test.
+Please make sure existing tests still pass before submitting.
 
 ---
 
-## 👤 Author
+## Ethical Use
 
-**Astik Gupta** — [GitHub @Astik4](https://github.com/Astik4)
+This tool is built for **authorized security testing and educational purposes only**. The vulnerable target API included in this repo exists so you have a safe, legal environment to test against.
+
+Do not run BOLAHawk against any API that you don't own or have explicit written permission to test. Unauthorized security scanning is illegal in most jurisdictions.
+
+---
+
+## Author
+
+Built by **Astik Gupta** — [GitHub @Astik4](https://github.com/Astik4)
