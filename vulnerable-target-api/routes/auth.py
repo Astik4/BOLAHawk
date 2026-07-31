@@ -6,8 +6,7 @@ from models import db, User
 
 auth_bp = Blueprint('auth', __name__)
 
-JWT_SECRET = "secret"  # nosemgrep: python.pyjwt.python-pyjwt-hardcoded-secret.python-pyjwt-hardcoded-secret, python.jwt.security.jwt-hardcode.jwt-python-hardcoded-secret
-# Planted vulnerability: weak/guessable secret. BOLAHawk's JWT check brute-forces this.
+JWT_SECRET = "secret"  # nosemgrep 
 
 def token_required(f):
     @wraps(f)
@@ -71,7 +70,7 @@ def login():
     # Expire check is theoretically present but standard PyJWT requires exp claim.
     # If exp claim is missing from payload, PyJWT does not fail on expiry. 
     # So we intentionally omit the 'exp' claim to simulate missing expiration validation!
-    token = jwt.encode(payload, JWT_SECRET, algorithm="HS256")  # nosemgrep: python.pyjwt.python-pyjwt-hardcoded-secret.python-pyjwt-hardcoded-secret
+    token = jwt.encode(payload, JWT_SECRET, algorithm="HS256")  # nosemgrep
     
     return jsonify({
         "token": token,
