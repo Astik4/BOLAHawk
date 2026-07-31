@@ -27,7 +27,7 @@ An automated security scanning and auditing platform designed to discover **OWAS
 │   │   ├── auth_manager.py    # Multi-role token management
 │   │   ├── scanner/           # Security scanning core & checks
 │   │   └── reporting/         # PDF (ReportLab) & HTML (Jinja2) templates
-│   └── tests/                 # Scanner and routing unit tests
+│   └── requirements.txt       # Python packages (FastAPI, ReportLab, etc.)
 │
 ├── frontend/                  # React + Vite Dashboard
 │   ├── src/
@@ -90,13 +90,6 @@ If you prefer to run the servers directly in Python:
    uvicorn backend.app.main:app --host 127.0.0.1 --port 8000 --reload
    ```
 
-### 2. Run Automated Pytest Suite
-To verify the scanning engine, JWT exploits, and endpoint routers, execute:
-```bash
-pytest
-```
-*(All 18 unit tests should pass successfully)*
-
 ---
 
 ## 🛡️ Planted Vulnerabilities (Reference Key)
@@ -107,3 +100,32 @@ The companion target API has the following vulnerabilities seeded for verificati
 3. **BFLA:** `GET /api/admin/users` admin console does not enforce administrative role boundaries; standard users can query admin actions.
 4. **JWT Flaws:** Supports header algorithm `none` signatures without validation, uses `secret` as a weak key signature, and omits standard expiration timestamps (`exp`).
 5. **No Rate-Limiting:** `POST /api/auth/login` accepts unlimited calls without IP throttling or lockout policies.
+
+---
+
+## 🌐 Deployment Walkthrough
+
+To deploy BOLAHawk in a production/cloud environment, we split it into its three logical tiers.
+
+> [!CAUTION]
+> **CRITICAL SECURITY WARNING:** The `vulnerable-target-api` contains severe, intentional vulnerabilities. **Never deploy it exposed directly to the public internet.** It should be hosted on a private network or be heavily IP-restricted.
+
+### 1. Deploy the Vulnerable Target API (Flask)
+Deploy this component to **Render** or **Railway** using the provided `vulnerable-target-api/Dockerfile`.
+* **Private Service (Render):** Deploy as a *Private Service* instead of a web service. This keeps it invisible to the public internet but accessible to other services in your Render account.
+* **Private Network (Railway):** Deploy as a standard service but rely on Railway's internal network address (e.g. `http://vulnerable-target-api.railway.internal:5000`) rather than binding a public domain.
+
+### 2. Deploy the Scanning Backend (FastAPI)
+Deploy this component to **Render** or **Railway** as a public web service using the `backend/Dockerfile` with root folder `/backend`.
+* **Environment Variables:**
+  * `TARGET_API_URL`: Set this to the internal private domain of your target API (e.g. `http://vulnerable-target-api:5000`).
+* **CORS Settings:**
+  * In `backend/app/main.py`, update `CORSMiddleware` allowed origins from `["*"]` to your deployed frontend domain.
+
+### 3. Deploy the Dashboard UI (Vite-React)
+Deploy this static frontend to **Vercel**, **Netlify**, or **Render Static Sites** with root folder `/frontend`.
+* **Build Commands:**
+  * Build command: `npm run build`
+  * Publish directory: `dist`
+* **Environment Variables:**
+  * `VITE_API_BASE`: Set this to the public URL of your deployed FastAPI backend (e.g. `https://bolahawk-backend.onrender.com`).
