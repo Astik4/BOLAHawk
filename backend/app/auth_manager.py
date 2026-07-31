@@ -1,7 +1,7 @@
 import json
 import httpx
-from app import config
-from app import token_store
+from . import config
+from . import token_store
 
 def _load_credentials():
     """Loads configured test credentials from JSON."""

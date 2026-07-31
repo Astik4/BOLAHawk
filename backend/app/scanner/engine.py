@@ -1,7 +1,7 @@
 import httpx
 import random
-from app import auth_manager, config
-from app.scanner import endpoint_loader, request_runner
+from .. import auth_manager, config
+from . import endpoint_loader, request_runner
 
 DEFAULT_PATH_PARAMS = {
     "order_id": 1,

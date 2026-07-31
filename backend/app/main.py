@@ -7,10 +7,10 @@ from fastapi import FastAPI, BackgroundTasks, HTTPException, Response
 from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.scanner.security_orchestrator import run_full_scan
-from app.reporting.data import build_report_context
-from app.reporting.pdf_report import build_pdf_report
-from app.reporting.html_report import render_html_report
+from backend.app.scanner.security_orchestrator import run_full_scan
+from backend.app.reporting.data import build_report_context
+from backend.app.reporting.pdf_report import build_pdf_report
+from backend.app.reporting.html_report import render_html_report
 
 app = FastAPI(
     title="BOLAHawk API Security Scanner",
