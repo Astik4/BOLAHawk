@@ -21,15 +21,17 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Dashboard runs on a different origin (Vite dev server / static host) —
-# wide open here since this is a local security-testing tool, not a
-# multi-tenant public service. Tighten allow_origins before deploying
-# anywhere it'd be reachable by untrusted browsers.
+# CORS origins are read from the ALLOWED_ORIGINS env var (comma-separated).
+# Defaults to the Vite dev-server origin for local development.
+# For production, set ALLOWED_ORIGINS to your actual frontend domain(s).
+_raw_origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:5173")
+_allowed_origins = [o.strip() for o in _raw_origins.split(",") if o.strip()]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=_allowed_origins,
+    allow_methods=["GET", "POST"],
+    allow_headers=["Authorization", "Content-Type"],
 )
 
 # In-memory scan store. Fine for a single-operator local tool; swap for a

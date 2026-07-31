@@ -12,6 +12,11 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
+# Run as non-root for least-privilege container security
+RUN useradd --create-home --shell /usr/sbin/nologin appuser \
+    && chown -R appuser:appuser /app
+USER appuser
+
 ENV PORT=8000
 EXPOSE 8000
 

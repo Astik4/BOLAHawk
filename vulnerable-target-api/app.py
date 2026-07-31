@@ -35,5 +35,8 @@ with app.app_context():
         seed_db()
 
 if __name__ == '__main__':
-    # Run target API on port 5000
-    app.run(host='127.0.0.1', port=5000, debug=True)
+    # Run target API on port 5000.
+    # debug mode is intentionally plantable via FLASK_DEBUG env var for local dev;
+    # it is OFF by default (and off in Docker) since the Dockerfile uses CMD directly.
+    _debug = os.getenv("FLASK_DEBUG", "false").lower() == "true"
+    app.run(host='127.0.0.1', port=5000, debug=_debug)

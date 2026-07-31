@@ -5,7 +5,7 @@ services:
     build: ./vulnerable-target-api
     container_name: api-security-target
     ports:
-      - "5000:5000"
+      - "127.0.0.1:5000:5000"
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:5000/health')"]
       interval: 5s
@@ -16,7 +16,7 @@ services:
     build: ./backend
     container_name: api-security-backend
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
     environment:
       - TARGET_API_URL=http://target-api:5000
     depends_on:

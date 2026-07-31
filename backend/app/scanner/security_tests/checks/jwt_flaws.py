@@ -30,8 +30,12 @@ class JWTFlawsCheck:
         return findings
 
     async def _check_alg_none(self, prober: Prober, sample_valid_token: str) -> List[Finding]:
-        claims = pyjwt.decode(sample_valid_token, options={"verify_signature": False})
-        forged = pyjwt.encode(claims, key="", algorithm="none")
+        # nosemgrep: python.jwt.security.unverified-jwt-decode.unverified-jwt-decode
+        # Intentional: we strip the signature to extract claims for the alg:none forgery attack.
+        claims = pyjwt.decode(sample_valid_token, options={"verify_signature": False})  # nosemgrep
+        # nosemgrep: python.jwt.security.jwt-none-alg.jwt-python-none-alg
+        # Intentional: this IS the forged token we fire at the target to test whether it accepts alg=none.
+        forged = pyjwt.encode(claims, key="", algorithm="none")  # nosemgrep
         status, _ = await prober(self.protected_endpoint, self.method, {"Authorization": f"Bearer {forged}"})
         if status == 200:
             return [Finding(
@@ -49,7 +53,9 @@ class JWTFlawsCheck:
         return []
 
     async def _check_weak_secret(self, prober: Prober, sample_valid_token: str) -> List[Finding]:
-        claims = pyjwt.decode(sample_valid_token, options={"verify_signature": False})
+        # nosemgrep: python.jwt.security.unverified-jwt-decode.unverified-jwt-decode
+        # Intentional: decoding without verification to extract claims before re-signing with a weak secret.
+        claims = pyjwt.decode(sample_valid_token, options={"verify_signature": False})  # nosemgrep
         for secret in _COMMON_WEAK_SECRETS:
             forged = pyjwt.encode(claims, key=secret, algorithm="HS256")
             status, _ = await prober(self.protected_endpoint, self.method, {"Authorization": f"Bearer {forged}"})
