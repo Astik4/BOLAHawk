@@ -17,20 +17,20 @@ Under the hood, BOLAHawk:
 - Assigns each finding a **CVSS v3.1 score** the same standard used by security advisories and CVEs
 - Compiles everything into a readable **HTML or downloadable PDF report**
 
-It ships with a **deliberately vulnerable Flask API** so you can run real scans against real broken code right out of the box — no need to risk scanning something you shouldn't.
+It ships with a **deliberately vulnerable Flask API** so you can run real scans against real broken code right out of the box no need to risk scanning something you shouldn't.
 
 ---
 
 ## Why it matters
 
-APIs are the backbone of modern software, and they're also the most actively exploited attack surface. The [OWASP API Security Top 10](https://owasp.org/API-Security/) exists because these vulnerabilities show up again and again — in startups, in enterprises, in apps used by millions of people.
+APIs are the backbone of modern software, and they're also the most actively exploited attack surface. The [OWASP API Security Top 10](https://owasp.org/API-Security/) exists because these vulnerabilities show up again and again in startups, in enterprises, in apps used by millions of people.
 
 The problem isn't that developers don't care. It's that:
 - Manual testing is slow and inconsistent
 - Most existing tools focus on web apps, not APIs specifically
 - BOLA-type bugs are nearly invisible without cross-user testing
 
-BOLAHawk automates the hard part. It sets up the test matrix, fires the cross-authenticated requests, interprets the responses, and scores the severity — so you can focus on fixing issues rather than finding them.
+BOLAHawk automates the hard part. It sets up the test matrix, fires the cross-authenticated requests, interprets the responses, and scores the severity so you can focus on fixing issues rather than finding them.
 
 ---
 
