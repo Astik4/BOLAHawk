@@ -1,5 +1,6 @@
 import hashlib
 import jwt
+import os
 from flask import Blueprint, request, jsonify
 from functools import wraps
 from models import db, User
