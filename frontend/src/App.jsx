@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { startScan, getScan, listScans, reportPdfUrl, reportHtmlUrl } from "./api";
+import { scanLabel, formatTimestamp, formatElapsed } from "./utils";
 import SummaryCards from "./components/SummaryCards";
 import SeverityChart from "./components/SeverityChart";
 import FindingsTable from "./components/FindingsTable";
@@ -9,7 +10,10 @@ export default function App() {
   const [scan, setScan] = useState(null);
   const [history, setHistory] = useState([]);
   const [error, setError] = useState(null);
+  const [severityFilter, setSeverityFilter] = useState("All");
+  const [now, setNow] = useState(Date.now());
   const pollRef = useRef(null);
+  const tickRef = useRef(null);
 
   const refreshHistory = async () => {
     try {
@@ -22,6 +26,15 @@ export default function App() {
   useEffect(() => {
     refreshHistory();
   }, []);
+
+  useEffect(() => {
+    if (scan?.status === "running") {
+      tickRef.current = setInterval(() => setNow(Date.now()), 1000);
+    } else {
+      clearInterval(tickRef.current);
+    }
+    return () => clearInterval(tickRef.current);
+  }, [scan?.status]);
 
   const pollScan = (scanId) => {
     clearInterval(pollRef.current);
@@ -42,6 +55,7 @@ export default function App() {
 
   const handleRunScan = async () => {
     setError(null);
+    setSeverityFilter("All");
     try {
       const { scan_id } = await startScan(targetUrl.trim() || undefined);
       const initial = await getScan(scan_id);
@@ -71,7 +85,7 @@ export default function App() {
             disabled={isRunning}
           />
           <button className="btn" onClick={handleRunScan} disabled={isRunning}>
-            {isRunning ? "Scanning…" : "Run Scan"}
+            {isRunning ? `Scanning… ${formatElapsed(scan.started_at, now)}` : "Run Scan"}
           </button>
         </div>
       </div>
@@ -81,7 +95,10 @@ export default function App() {
       {scan && (
         <div className="status-line" style={{ marginBottom: 20 }}>
           <span className={`status-dot ${scan.status}`} />
-          scan {scan.scan_id.slice(0, 8)} — {scan.status}
+          <span title={scan.scan_id}>
+            {scanLabel(scan)} — {scan.status}
+          </span>
+          <span>&middot; {formatTimestamp(scan.started_at)}</span>
           {scan.status === "failed" && ` (${scan.error})`}
           {scan.status === "completed" && (
             <>
@@ -101,8 +118,8 @@ export default function App() {
       {result ? (
         <>
           <SummaryCards summary={result.summary} />
-          <SeverityChart summary={result.summary} />
-          <FindingsTable findings={result.findings} />
+          <SeverityChart summary={result.summary} activeSeverity={severityFilter} onSelectSeverity={setSeverityFilter} />
+          <FindingsTable findings={result.findings} filter={severityFilter} onFilterChange={setSeverityFilter} />
         </>
       ) : (
         !isRunning && (
@@ -118,14 +135,14 @@ export default function App() {
           {history.slice(0, 5).map((s) => (
             <div
               key={s.scan_id}
-              className="finding-card"
-              style={{ cursor: "pointer" }}
+              className={`finding-card history-row ${scan?.scan_id === s.scan_id ? "selected" : ""}`}
               onClick={async () => setScan(await getScan(s.scan_id))}
             >
-              <div className="finding-row" style={{ gridTemplateColumns: "90px 1fr 220px" }}>
+              <div className="finding-row" style={{ gridTemplateColumns: "90px 1fr 1fr 180px" }}>
                 <span className={`status-dot ${s.status}`} />
-                <span className="finding-title">{s.scan_id.slice(0, 8)}</span>
-                <span className="finding-endpoint">{new Date(s.started_at).toLocaleString()}</span>
+                <span className="finding-title">{scanLabel(s)}</span>
+                <span className="finding-endpoint">{s.target_url}</span>
+                <span className="finding-endpoint">{formatTimestamp(s.started_at)}</span>
               </div>
             </div>
           ))}

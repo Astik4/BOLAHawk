@@ -19,6 +19,7 @@ def build_report_context(scan: dict) -> dict:
 
     return {
         "scan_id": scan["scan_id"],
+        "scan_number": scan.get("scan_number"),
         "status": scan["status"],
         "started_at": scan.get("started_at"),
         "finished_at": scan.get("finished_at"),

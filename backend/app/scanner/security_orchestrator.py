@@ -16,9 +16,9 @@ Execution order matters here, so it's spelled out:
    sets, and the active checks (JWT forgery, rate limiting).
 """
 import httpx
-from .. import auth_manager, config
-from . import endpoint_loader, engine, request_runner
-from .security_tests.runner import SecurityTestRunner
+from app import auth_manager, config
+from app.scanner import endpoint_loader, engine, request_runner
+from app.scanner.security_tests.runner import SecurityTestRunner
 
 
 async def _discover_owned_order_ids(client, target_url, auth_headers) -> dict:

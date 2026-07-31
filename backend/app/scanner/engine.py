@@ -1,7 +1,7 @@
 import httpx
 import random
-from .. import auth_manager, config
-from . import endpoint_loader, request_runner
+from app import auth_manager, config
+from app.scanner import endpoint_loader, request_runner
 
 DEFAULT_PATH_PARAMS = {
     "order_id": 1,
@@ -23,6 +23,7 @@ async def run_scan(target_url: str = None) -> list:
     auth_headers = {
         "anonymous": {},
         "alice_user": {},
+        "bob_user": {},
         "admin_user": {}
     }
     
@@ -31,7 +32,13 @@ async def run_scan(target_url: str = None) -> list:
         auth_headers["alice_user"] = {"Authorization": f"Bearer {alice_token}"}
     except Exception as e:
         print(f"Scan Engine Warning: Could not retrieve token for Alice: {e}")
-        
+
+    try:
+        bob_token = auth_manager.get_token("bob_user")
+        auth_headers["bob_user"] = {"Authorization": f"Bearer {bob_token}"}
+    except Exception as e:
+        print(f"Scan Engine Warning: Could not retrieve token for Bob: {e}")
+
     try:
         admin_token = auth_manager.get_token("admin_user")
         auth_headers["admin_user"] = {"Authorization": f"Bearer {admin_token}"}

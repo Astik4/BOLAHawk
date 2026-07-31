@@ -4,6 +4,7 @@
       "path": "/api/auth/login",
       "method": "POST",
       "auth_required": false,
+      "rate_limit_expected": true,
       "payload_template": {
         "username": "{username}",
         "password": "{password}"
@@ -13,9 +14,15 @@
       "path": "/api/users/signup",
       "method": "POST",
       "auth_required": false,
+      "sensitive_fields": [
+        ["user.role", ["admin"]],
+        ["user.is_admin", [true]]
+      ],
       "payload_template": {
         "username": "newuser_{rand}",
-        "password": "Password123!"
+        "password": "Password123!",
+        "role": "admin",
+        "is_admin": true
       }
     },
     {
@@ -36,12 +43,14 @@
     {
       "path": "/api/orders/{order_id}",
       "method": "GET",
-      "auth_required": true
+      "auth_required": true,
+      "owner_scoped": true
     },
     {
       "path": "/api/orders/{order_id}",
       "method": "PUT",
       "auth_required": true,
+      "owner_scoped": true,
       "payload_template": {
         "item_name": "Updated Test Item",
         "quantity": 5,
@@ -51,12 +60,14 @@
     {
       "path": "/api/orders/{order_id}",
       "method": "DELETE",
-      "auth_required": true
+      "auth_required": true,
+      "owner_scoped": true
     },
     {
       "path": "/api/admin/users",
       "method": "GET",
-      "auth_required": true
+      "auth_required": true,
+      "admin_only": true
     }
   ]
 }

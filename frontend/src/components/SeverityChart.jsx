@@ -7,7 +7,7 @@ const SEVERITY_COLORS = {
   Low: "#56ccf2",
 };
 
-export default function SeverityChart({ summary }) {
+export default function SeverityChart({ summary, activeSeverity, onSelectSeverity }) {
   const bySeverity = summary?.by_severity || {};
   const data = ["Critical", "High", "Medium", "Low"].map((sev) => ({
     severity: sev,
@@ -16,7 +16,12 @@ export default function SeverityChart({ summary }) {
 
   return (
     <div className="chart-panel">
-      <h2>Findings by Severity</h2>
+      <h2>
+        Findings by Severity
+        <span style={{ float: "right", fontSize: 10, color: "var(--muted)", fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>
+          click a bar to filter
+        </span>
+      </h2>
       <ResponsiveContainer width="100%" height={200}>
         <BarChart data={data} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
           <XAxis
@@ -33,9 +38,18 @@ export default function SeverityChart({ summary }) {
             labelStyle={{ color: "#e8ebf2" }}
             cursor={{ fill: "rgba(255,255,255,0.03)" }}
           />
-          <Bar dataKey="count" radius={[4, 4, 0, 0]}>
+          <Bar
+            dataKey="count"
+            radius={[4, 4, 0, 0]}
+            cursor="pointer"
+            onClick={(d) => onSelectSeverity(activeSeverity === d.severity ? "All" : d.severity)}
+          >
             {data.map((d) => (
-              <Cell key={d.severity} fill={SEVERITY_COLORS[d.severity]} />
+              <Cell
+                key={d.severity}
+                fill={SEVERITY_COLORS[d.severity]}
+                opacity={activeSeverity === "All" || activeSeverity === d.severity ? 1 : 0.25}
+              />
             ))}
           </Bar>
         </BarChart>
