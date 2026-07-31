@@ -6,7 +6,7 @@ from models import db, User
 
 auth_bp = Blueprint('auth', __name__)
 
-JWT_SECRET = "secret"  # nosemgrep 
+JWT_SECRET = "secret" #nosemgrep 
 
 def token_required(f):
     @wraps(f)
