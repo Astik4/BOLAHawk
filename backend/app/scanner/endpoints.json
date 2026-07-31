@@ -1,0 +1,62 @@
+{
+  "endpoints": [
+    {
+      "path": "/api/auth/login",
+      "method": "POST",
+      "auth_required": false,
+      "payload_template": {
+        "username": "{username}",
+        "password": "{password}"
+      }
+    },
+    {
+      "path": "/api/users/signup",
+      "method": "POST",
+      "auth_required": false,
+      "payload_template": {
+        "username": "newuser_{rand}",
+        "password": "Password123!"
+      }
+    },
+    {
+      "path": "/api/orders",
+      "method": "GET",
+      "auth_required": true
+    },
+    {
+      "path": "/api/orders",
+      "method": "POST",
+      "auth_required": true,
+      "payload_template": {
+        "item_name": "Test Item",
+        "quantity": 2,
+        "price": 49.99
+      }
+    },
+    {
+      "path": "/api/orders/{order_id}",
+      "method": "GET",
+      "auth_required": true
+    },
+    {
+      "path": "/api/orders/{order_id}",
+      "method": "PUT",
+      "auth_required": true,
+      "payload_template": {
+        "item_name": "Updated Test Item",
+        "quantity": 5,
+        "price": 99.99
+      }
+    },
+    {
+      "path": "/api/orders/{order_id}",
+      "method": "DELETE",
+      "auth_required": true
+    },
+    {
+      "path": "/api/admin/users",
+      "method": "GET",
+      "auth_required": true
+    }
+  ]
+}

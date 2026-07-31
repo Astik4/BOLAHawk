@@ -1,0 +1,24 @@
+version: "3.9"
+
+services:
+  target-api:
+    build: ./vulnerable-target-api
+    container_name: api-security-target
+    ports:
+      - "5000:5000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:5000/health')"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  backend:
+    build: ./backend
+    container_name: api-security-backend
+    ports:
+      - "8000:8000"
+    environment:
+      - TARGET_API_URL=http://target-api:5000
+    depends_on:
+      target-api:
+        condition: service_healthy
