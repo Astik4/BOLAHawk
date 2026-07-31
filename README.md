@@ -1,22 +1,20 @@
 # BOLAHawk 🦅
 
-> An automated API security scanner that hunts down OWASP API Top 10 vulnerabilities, scores every finding with CVSS v3.1, and hands you a professional PDF report — all from a single scan.
-
 ---
 
 ## What is BOLAHawk?
 
-If you've ever shipped a REST API and wondered *"is this thing actually secure?"* — BOLAHawk is the answer.
+If you've ever shipped a REST API and wondered *"is this thing actually secure?"* BOLAHawk is the answer.
 
 Most security tools are either too complex to set up, too generic to be useful, or they produce walls of raw output that take hours to make sense of. BOLAHawk was built to fix that. Point it at an API, click scan, and within seconds you get a clean, structured report telling you exactly what's broken, how bad it is, and where it lives.
 
-The name comes from **BOLA** — Broken Object Level Authorization — which is the #1 vulnerability in the OWASP API Security Top 10. It's also one of the most commonly missed issues in real-world APIs, because it doesn't look broken from the outside. A user can log in fine, endpoints respond correctly, but underneath, one user can quietly access another user's data just by changing an ID in the URL. BOLAHawk specifically hunts for this — and a lot more.
+The name comes from **BOLA** — Broken Object Level Authorization which is the #1 vulnerability in the OWASP API Security Top 10. It's also one of the most commonly missed issues in real-world APIs, because it doesn't look broken from the outside. A user can log in fine, endpoints respond correctly, but underneath, one user can quietly access another user's data just by changing an ID in the URL. BOLAHawk specifically hunts for this and a lot more.
 
 Under the hood, BOLAHawk:
 - Logs in as **multiple test users** and builds an authentication matrix
 - Fires cross-user requests across every API endpoint it knows about
 - Checks whether object-level authorization is enforced (BOLA), function-level access is gated (BFLA), fields are protected from mass assignment, rate limiting is in place, and JWT tokens are handled correctly
-- Assigns each finding a **CVSS v3.1 score** — the same standard used by security advisories and CVEs
+- Assigns each finding a **CVSS v3.1 score** the same standard used by security advisories and CVEs
 - Compiles everything into a readable **HTML or downloadable PDF report**
 
 It ships with a **deliberately vulnerable Flask API** so you can run real scans against real broken code right out of the box — no need to risk scanning something you shouldn't.
@@ -46,7 +44,7 @@ BOLAHawk automates the hard part. It sets up the test matrix, fires the cross-au
 | Missing Rate Limiting | API4:2023 | Can the same endpoint be hammered with requests without any throttle? |
 | Broken Authentication / JWT Flaws | API2:2023 | Are tokens validated correctly? Can they be tampered with? |
 
-Each detected issue is given a **CVSS v3.1 base score** with a breakdown of the exploitability and impact metrics — the same format you'd see in a professional security audit.
+Each detected issue is given a **CVSS v3.1 base score** with a breakdown of the exploitability and impact metrics the same format you'd see in a professional security audit.
 
 ---
 
@@ -332,7 +330,7 @@ Core endpoints:
 
 ## Contributing
 
-Contributions are genuinely welcome — whether it's a new vulnerability check, a better report format, or just fixing a typo.
+Contributions are genuinely welcome whether it's a new vulnerability check, a better report format, or just fixing a typo.
 
 1. Fork the repo
 2. Create a branch: `git checkout -b feat/your-feature-name`
@@ -348,9 +346,3 @@ Please make sure existing tests still pass before submitting.
 This tool is built for **authorized security testing and educational purposes only**. The vulnerable target API included in this repo exists so you have a safe, legal environment to test against.
 
 Do not run BOLAHawk against any API that you don't own or have explicit written permission to test. Unauthorized security scanning is illegal in most jurisdictions.
-
----
-
-## Author
-
-Built by **Astik Gupta** — [GitHub @Astik4](https://github.com/Astik4)
