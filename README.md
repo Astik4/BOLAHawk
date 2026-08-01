@@ -14,32 +14,6 @@ An automated **API Security Testing Platform** designed to assess REST APIs agai
 
 ---
 
-# 📑 Table of Contents
-
-- Overview
-- Key Features
-- Technology Stack
-- Architecture
-- Project Structure
-- Prerequisites
-- Setup & Installation
-- Configuration
-- Running the Project
-- Usage Guide
-- Example Workflow
-- Reports
-- Supported Security Checks
-- Deployment
-- Screenshots
-- Troubleshooting
-- Ethical Use
-- Roadmap
-- Contributing
-- License
-- Author
-
----
-
 # 📖 Overview
 
 Modern applications rely heavily on APIs, making API security a critical aspect of software development. BOLAHawk automates the process of testing REST APIs against common security weaknesses by providing an easy-to-use dashboard, automated vulnerability detection, and detailed security reports.
