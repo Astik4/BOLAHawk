@@ -5,6 +5,8 @@ from routes.auth import auth_bp
 from routes.orders import orders_bp
 from routes.admin import admin_bp
 from seed_data import seed_db
+from dotenv import load_dotenv
+load_dotenv()  # Load environment variables from .env file
 
 app = Flask(__name__)
 # Database file stored locally in the api directory

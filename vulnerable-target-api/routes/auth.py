@@ -1,12 +1,14 @@
 import hashlib
 import jwt
+import os
 from flask import Blueprint, request, jsonify
 from functools import wraps
 from models import db, User
 
+
 auth_bp = Blueprint('auth', __name__)
 
-JWT_SECRET = "secret" #nosemgrep 
+JWT_SECRET = os.getenv("JWT_SECRET")  
 
 def token_required(f):
     @wraps(f)
