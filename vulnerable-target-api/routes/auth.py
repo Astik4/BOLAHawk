@@ -8,7 +8,11 @@ from models import db, User
 
 auth_bp = Blueprint('auth', __name__)
 
-JWT_SECRET = os.getenv("JWT_SECRET")  
+def get_jwt_secret():
+    secret = os.getenv("JWT_SECRET")
+    if not secret:
+        raise RuntimeError("JWT_SECRET environment variable is not set")
+    return secret 
 
 def token_required(f):
     @wraps(f)
