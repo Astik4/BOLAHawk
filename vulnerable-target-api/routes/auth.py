@@ -34,7 +34,7 @@ def token_required(f):
                 payload = jwt.decode(token, options={"verify_signature": False})  # nosemgrep: python.jwt.security.unverified-jwt-decode.unverified-jwt-decode
             else:
                 # Validate with weak secret
-                payload = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
+                payload = jwt.decode(token, get_jwt_secret(), algorithms=["HS256"])
             
             current_user = User.query.get(payload['user_id'])
             if not current_user:
@@ -76,7 +76,7 @@ def login():
     # Expire check is theoretically present but standard PyJWT requires exp claim.
     # If exp claim is missing from payload, PyJWT does not fail on expiry. 
     # So we intentionally omit the 'exp' claim to simulate missing expiration validation!
-    token = jwt.encode(payload, JWT_SECRET, algorithm="HS256")  # nosemgrep
+    token = jwt.encode(payload, get_jwt_secret(), algorithm="HS256")  # nosemgrep
     
     return jsonify({
         "token": token,

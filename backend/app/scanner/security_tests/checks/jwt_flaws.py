@@ -46,7 +46,7 @@ class JWTFlawsCheck:
                 auth_context="forged",
                 description="token_required accepts a token with header alg='none', bypassing signature verification entirely.",
                 evidence=f"status={status}",
-                remediation="Decode with an explicit algorithms allow-list (jwt.decode(token, JWT_SECRET, algorithms=['HS256'])) — never branch on the token's own alg header.",
+                remediation="Decode with an explicit algorithms allow-list (jwt.decode(token, get_jwt_secret(), algorithms=['HS256'])) — never branch on the token's own alg header.",
                 vector=CVSSVector(av=AV.NETWORK, ac=AC.LOW, pr=PR.NONE, ui=UI.NONE,
                                    scope=SCOPE.CHANGED, conf=IMPACT.HIGH, integ=IMPACT.HIGH, avail=IMPACT.HIGH),
             )]
