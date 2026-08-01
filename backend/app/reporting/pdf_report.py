@@ -127,7 +127,7 @@ def _styles():
 
     styles.add(
         ParagraphStyle(
-            name="Code",
+            name="BolaCode",
             fontName="Courier",
             fontSize=8,
             leading=10,
@@ -477,7 +477,7 @@ def _finding_block(f: dict, styles):
         [
             Paragraph(
                 f["evidence"],
-                styles["Code"]
+                styles["BolaCode"]
             )
         ]
     ])
@@ -538,7 +538,7 @@ def _finding_block(f: dict, styles):
     flow.append(
         Paragraph(
             f["cvss_vector"],
-            styles["Code"]
+            styles["BolaCode"]
         )
     )
 
