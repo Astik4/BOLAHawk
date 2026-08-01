@@ -1,4 +1,4 @@
-# 🦅 BOLAHawk
+<img width="1918" height="1136" alt="image" src="https://github.com/user-attachments/assets/98145eab-299d-4e57-87ee-d8e4a34bc904" /># 🦅 BOLAHawk
 
 <p align="center">
 
@@ -362,19 +362,19 @@ Refer to **DEPLOYMENT.md** for additional deployment guidance.
 
 ## Dashboard
 
-> Add dashboard screenshot here.
+<img width="1918" height="1028" alt="Screenshot 2026-08-01 210129" src="https://github.com/user-attachments/assets/a8cde158-379e-4a6e-897e-957962b04912" />
 
 ---
 
 ## Scan Results
 
-> Add scan results screenshot here.
+<img width="1919" height="1029" alt="Screenshot 2026-08-01 210215" src="https://github.com/user-attachments/assets/60be1d4a-e401-40ba-a444-083e448bad69" />
 
 ---
 
 ## Generated Report
 
-> Add report screenshot here.
+<img width="1162" height="1034" alt="image" src="https://github.com/user-attachments/assets/2f2bbcad-ae1c-4882-a28d-e4080e24ce7e" />
 
 ---
 
