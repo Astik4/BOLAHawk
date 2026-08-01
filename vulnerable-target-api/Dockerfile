@@ -7,12 +7,12 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-# Run as non-root — the application code is intentionally vulnerable
-# for security testing purposes, but the container itself should not run as root.
 RUN useradd --create-home --shell /usr/sbin/nologin appuser \
     && chown -R appuser:appuser /app
 USER appuser
 
-EXPOSE 5000
+ENV PORT=5000
+
+EXPOSE ${PORT}
 
 CMD ["python", "app.py"]
