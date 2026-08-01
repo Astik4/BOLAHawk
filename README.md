@@ -422,6 +422,8 @@ BOLAHawk is intended exclusively for:
 - Authorized penetration testing
 - Internal security assessments
 
+Note: The vulnerable target API is intentionally configured with weak credentials and security flaws (including a weak JWT signing secret) for educational purposes. These settings should never be used in production.
+
 Do **NOT** use this software against systems you do not own or do not have explicit authorization to test.
 
 The author assumes no responsibility for misuse of this project.
