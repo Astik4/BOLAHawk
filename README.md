@@ -1,4 +1,4 @@
-<img width="1918" height="1136" alt="image" src="https://github.com/user-attachments/assets/98145eab-299d-4e57-87ee-d8e4a34bc904" /># 🦅 BOLAHawk
+# 🦅 BOLAHawk
 
 <p align="center">
 
