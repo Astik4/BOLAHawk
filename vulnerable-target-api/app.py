@@ -39,4 +39,8 @@ if __name__ == '__main__':
     # debug mode is intentionally plantable via FLASK_DEBUG env var for local dev;
     # it is OFF by default (and off in Docker) since the Dockerfile uses CMD directly.
     _debug = os.getenv("FLASK_DEBUG", "false").lower() == "true"
-    app.run(host='127.0.0.1', port=5000, debug=_debug)
+    app.run(
+        host="0.0.0.0",
+        port=int(os.environ.get("PORT", 5000)),
+        debug=_debug
+)
