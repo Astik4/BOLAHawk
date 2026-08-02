@@ -20,4 +20,7 @@ USER appuser
 ENV PORT=8000
 EXPOSE 8000
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Shell form (not exec form) so $PORT is actually expanded at container
+# startup — Render/Railway/etc inject their own PORT value per deploy, and
+# exec-form CMD ["uvicorn", ..., "--port", "8000"] would ignore it entirely.
+CMD uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}
