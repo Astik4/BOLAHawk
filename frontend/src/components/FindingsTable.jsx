@@ -1,127 +1,194 @@
 import { useMemo, useState } from "react";
+import { groupFindings, owaspFor, contextLabel, fingerprint, SEVERITIES, SEVERITY_ORDER } from "../owasp";
 
-const SEVERITY_ORDER = { Critical: 0, High: 1, Medium: 2, Low: 3, None: 4 };
-
-function CopyButton({ text }) {
-  const [copied, setCopied] = useState(false);
+function Copy({ text, onCopied }) {
   return (
     <button
       className="copy-btn"
       onClick={(e) => {
         e.stopPropagation();
-        navigator.clipboard.writeText(text);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 1200);
+        navigator.clipboard?.writeText(text);
+        onCopied?.();
       }}
     >
-      {copied ? "copied" : "copy"}
+      copy
     </button>
   );
 }
 
-function FindingCard({ f, forceOpen }) {
-  const [openOverride, setOpenOverride] = useState(null);
-  const open = openOverride === null ? forceOpen : openOverride;
+function Finding({ g, forceOpen, isNew, onCopied }) {
+  const [override, setOverride] = useState(null);
+  const open = override === null ? forceOpen : override;
+  const owasp = owaspFor(g.check_id);
 
   return (
-    <div className={`finding-card ${f.severity}`}>
-      <div className="finding-row" onClick={() => setOpenOverride(!open)}>
-        <span className={`sev-badge ${f.severity}`}>{f.severity}</span>
-        <span className="finding-title">{f.title}</span>
-        <span className="finding-endpoint">{f.method} {f.endpoint} <em>({f.auth_context})</em></span>
-        <span className="finding-score">{f.cvss_score.toFixed(1)}</span>
-        <span className={`chevron ${open ? "open" : ""}`}>&#9656;</span>
-      </div>
+    <div className={`finding ${g.severity}`}>
+      <button className="finding-head" onClick={() => setOverride(!open)} aria-expanded={open}>
+        <span className={`sev ${g.severity}`}>{g.severity}</span>
+        <span>
+          <span className="f-title">{g.title}</span>
+          <span className="f-sub">
+            <span>{g.method} {g.endpoint}</span>
+            <span>{g.contexts.map(contextLabel).join(", ")}</span>
+          </span>
+        </span>
+        <span className="f-tags">
+          {owasp.url ? (
+            <a
+              className="owasp-tag" href={owasp.url} target="_blank" rel="noreferrer"
+              title={owasp.name} onClick={(e) => e.stopPropagation()}
+            >
+              {owasp.id}
+            </a>
+          ) : null}
+          {g.occurrences.length > 1 && (
+            <span className="count-tag" title="Times this same flaw was proven">
+              ×{g.occurrences.length}
+            </span>
+          )}
+          {isNew && <span className="new-tag">NEW</span>}
+        </span>
+        <span className="score">{g.cvss_score.toFixed(1)}</span>
+        <span className={`chev ${open ? "open" : ""}`}>&#9656;</span>
+      </button>
+
       {open && (
-        <div className="finding-detail">
-          <div className="field-label">Check</div>
-          <div>{f.check_id}</div>
+        <div className="finding-body">
+          <div className="field">
+            <div className="field-label">OWASP category</div>
+            <div>{owasp.id} — {owasp.name}</div>
+          </div>
 
-          <div className="field-label">Description</div>
-          <div>{f.description}</div>
+          <div className="field">
+            <div className="field-label">What the scanner saw</div>
+            <div>{g.description}</div>
+          </div>
 
-          <div className="field-label">Evidence <CopyButton text={f.evidence} /></div>
-          <code>{f.evidence}</code>
+          <div className="field">
+            <div className="field-label">
+              Evidence <Copy text={g.evidence} onCopied={onCopied} />
+            </div>
+            <div className="mono-block">{g.evidence}</div>
+          </div>
 
-          <div className="field-label">Remediation</div>
-          <div>{f.remediation}</div>
+          {g.occurrences.length > 1 && (
+            <div className="field">
+              <div className="field-label">Proven {g.occurrences.length} times</div>
+              <div className="occ-list">
+                {g.occurrences.map((o, i) => (
+                  <span key={i} className="occ">
+                    {contextLabel(o.auth_context)} → {o.method} {o.endpoint}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
 
-          <div className="field-label">CVSS Vector <CopyButton text={f.cvss_vector} /></div>
-          <code>{f.cvss_vector}</code>
+          <div className="field">
+            <div className="field-label">How to fix it</div>
+            <div>{g.remediation}</div>
+          </div>
+
+          <div className="field">
+            <div className="field-label">
+              CVSS v3.1 vector <Copy text={g.cvss_vector} onCopied={onCopied} />
+            </div>
+            <div className="mono-block">{g.cvss_vector}</div>
+          </div>
+
+          <div className="field">
+            <div className="field-label">Detection module</div>
+            <div className="mono-block">{g.check_id}</div>
+          </div>
         </div>
       )}
     </div>
   );
 }
 
-export default function FindingsTable({ findings, filter, onFilterChange }) {
+export default function FindingsTable({ findings, filter, onFilterChange, newKeys, onCopied }) {
   const [search, setSearch] = useState("");
-  const [sortBy, setSortBy] = useState("severity"); // severity | score | title
+  const [sortBy, setSortBy] = useState("severity");
   const [expandAll, setExpandAll] = useState(false);
-  const severities = ["All", "Critical", "High", "Medium", "Low"];
+  const [grouped, setGrouped] = useState(true);
 
-  const visible = useMemo(() => {
-    let list = filter === "All" ? findings : findings.filter((f) => f.severity === filter);
-    if (search.trim()) {
-      const q = search.trim().toLowerCase();
+  const rows = useMemo(() => {
+    const base = grouped
+      ? groupFindings(findings)
+      : findings.map((f) => ({ ...f, key: `${fingerprint(f)}|${f.auth_context}`, occurrences: [f], contexts: [f.auth_context] }));
+
+    let list = filter === "All" ? base : base.filter((f) => f.severity === filter);
+
+    const q = search.trim().toLowerCase();
+    if (q) {
       list = list.filter(
         (f) =>
           f.title.toLowerCase().includes(q) ||
           f.endpoint.toLowerCase().includes(q) ||
-          f.check_id.toLowerCase().includes(q)
+          f.check_id.toLowerCase().includes(q) ||
+          owaspFor(f.check_id).id.toLowerCase().includes(q)
       );
     }
+
     const sorted = [...list];
-    if (sortBy === "severity") sorted.sort((a, b) => SEVERITY_ORDER[a.severity] - SEVERITY_ORDER[b.severity] || b.cvss_score - a.cvss_score);
+    if (sortBy === "severity")
+      sorted.sort((a, b) => SEVERITY_ORDER[a.severity] - SEVERITY_ORDER[b.severity] || b.cvss_score - a.cvss_score);
     if (sortBy === "score") sorted.sort((a, b) => b.cvss_score - a.cvss_score);
+    if (sortBy === "owasp") sorted.sort((a, b) => owaspFor(a.check_id).id.localeCompare(owaspFor(b.check_id).id));
     if (sortBy === "title") sorted.sort((a, b) => a.title.localeCompare(b.title));
     return sorted;
-  }, [findings, filter, search, sortBy]);
+  }, [findings, filter, search, sortBy, grouped]);
 
   return (
-    <div className="findings-section">
-      <h2>
-        Findings ({visible.length})
-        <span style={{ float: "right", display: "flex", gap: 6, alignItems: "center" }}>
-          {severities.map((s) => (
-            <button
-              key={s}
-              className="btn secondary"
-              style={{
-                padding: "4px 10px",
-                fontSize: 11,
-                borderColor: filter === s ? "var(--accent)" : "var(--border)",
-                color: filter === s ? "var(--accent)" : "var(--muted)",
-              }}
-              onClick={() => onFilterChange(s)}
-            >
+    <div className="panel">
+      <div className="panel-head">
+        <h2>Findings — {rows.length} shown</h2>
+        <div className="chips">
+          {["All", ...SEVERITIES].map((s) => (
+            <button key={s} className={`chip ${filter === s ? "on" : ""}`} onClick={() => onFilterChange(s)}>
               {s}
             </button>
           ))}
-        </span>
-      </h2>
+        </div>
+      </div>
 
-      <div className="findings-toolbar">
+      <div className="toolbar">
         <input
           className="search-input"
-          placeholder="search title, endpoint, check id…"
+          placeholder="Search by title, endpoint, module or OWASP ID"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
+          aria-label="Search findings"
         />
-        <select className="sort-select" value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
-          <option value="severity">Sort: Severity</option>
-          <option value="score">Sort: CVSS Score</option>
-          <option value="title">Sort: Title</option>
+        <select className="select" value={sortBy} onChange={(e) => setSortBy(e.target.value)} aria-label="Sort findings">
+          <option value="severity">Sort: severity</option>
+          <option value="score">Sort: CVSS score</option>
+          <option value="owasp">Sort: OWASP category</option>
+          <option value="title">Sort: title</option>
         </select>
-        <button className="btn secondary" style={{ padding: "7px 12px", fontSize: 11 }} onClick={() => setExpandAll(!expandAll)}>
+        <button className={`btn ghost ${grouped ? "on" : ""}`} onClick={() => setGrouped(!grouped)}>
+          {grouped ? "Grouped" : "Every occurrence"}
+        </button>
+        <button className="btn ghost" onClick={() => setExpandAll(!expandAll)}>
           {expandAll ? "Collapse all" : "Expand all"}
         </button>
       </div>
 
-      {visible.length === 0 ? (
-        <div className="empty-state">No findings match this filter/search.</div>
+      {rows.length === 0 ? (
+        <div className="empty">
+          <strong>Nothing matches those filters</strong>
+          Clear the search box or pick a different severity.
+        </div>
       ) : (
-        visible.map((f, i) => <FindingCard key={i} f={f} forceOpen={expandAll} />)
+        rows.map((g) => (
+          <Finding
+            key={g.key}
+            g={g}
+            forceOpen={expandAll}
+            isNew={newKeys?.has(fingerprint(g))}
+            onCopied={onCopied}
+          />
+        ))
       )}
     </div>
   );

@@ -20,11 +20,11 @@ from reportlab.platypus import (
 # ------------------------------------------------------------
 
 _SEVERITY_COLORS = {
-    "Critical": colors.HexColor("#d32f2f"),
-    "High": colors.HexColor("#f57c00"),
-    "Medium": colors.HexColor("#fbc02d"),
-    "Low": colors.HexColor("#388e3c"),
-    "None": colors.HexColor("#607d8b"),
+    "Critical": colors.HexColor("#B91C1C"),
+    "High": colors.HexColor("#EA580C"),
+    "Medium": colors.HexColor("#CA8A04"),
+    "Low": colors.HexColor("#15803D"),
+    "None": colors.HexColor("#64748B"),
 }
 
 
@@ -36,15 +36,20 @@ def _styles():
 
     styles = getSampleStyleSheet()
 
+    PRIMARY = colors.HexColor("#0F172A")
+    SECONDARY = colors.HexColor("#334155")
+    MUTED = colors.HexColor("#64748B")
+    BLUE = colors.HexColor("#2563EB")
+
     styles.add(
         ParagraphStyle(
             name="ReportTitle",
             fontName="Helvetica-Bold",
-            fontSize=30,
-            leading=34,
+            fontSize=34,
+            leading=40,
             alignment=TA_CENTER,
-            textColor=colors.HexColor("#0b1320"),
-            spaceAfter=6,
+            textColor=PRIMARY,
+            spaceAfter=8,
         )
     )
 
@@ -52,10 +57,11 @@ def _styles():
         ParagraphStyle(
             name="ReportSubtitle",
             fontName="Helvetica",
-            fontSize=14,
+            fontSize=15,
+            leading=22,
             alignment=TA_CENTER,
-            textColor=colors.HexColor("#666666"),
-            spaceAfter=18,
+            textColor=MUTED,
+            spaceAfter=30,
         )
     )
 
@@ -63,11 +69,36 @@ def _styles():
         ParagraphStyle(
             name="SectionHeading",
             fontName="Helvetica-Bold",
-            fontSize=16,
+            fontSize=19,
+            leading=22,
+            textColor=PRIMARY,
+            borderPadding=4,
+            borderWidth=0,
+            spaceBefore=18,
+            spaceAfter=12,
+        )
+    )
+
+    styles.add(
+        ParagraphStyle(
+            name="SubHeading",
+            fontName="Helvetica-Bold",
+            fontSize=13,
             leading=18,
-            textColor=colors.HexColor("#1f2937"),
-            spaceBefore=12,
-            spaceAfter=10,
+            textColor=SECONDARY,
+            spaceBefore=10,
+            spaceAfter=6,
+        )
+    )
+
+    styles.add(
+        ParagraphStyle(
+            name="Body",
+            fontName="Helvetica",
+            fontSize=10.5,
+            leading=18,
+            textColor=SECONDARY,
+            alignment=TA_LEFT,
         )
     )
 
@@ -77,8 +108,8 @@ def _styles():
             fontName="Helvetica",
             fontSize=9,
             alignment=TA_CENTER,
-            textColor=colors.grey,
-            spaceAfter=18,
+            textColor=MUTED,
+            spaceAfter=20,
         )
     )
 
@@ -86,9 +117,9 @@ def _styles():
         ParagraphStyle(
             name="CardTitle",
             fontName="Helvetica-Bold",
-            fontSize=13,
-            leading=16,
-            textColor=colors.HexColor("#111827"),
+            fontSize=14,
+            leading=18,
+            textColor=PRIMARY,
             spaceAfter=4,
         )
     )
@@ -97,10 +128,10 @@ def _styles():
         ParagraphStyle(
             name="CardMeta",
             fontName="Helvetica",
-            fontSize=8,
-            leading=10,
-            textColor=colors.HexColor("#6b7280"),
-            spaceAfter=8,
+            fontSize=9,
+            leading=12,
+            textColor=MUTED,
+            spaceAfter=6,
         )
     )
 
@@ -108,20 +139,24 @@ def _styles():
         ParagraphStyle(
             name="Label",
             fontName="Helvetica-Bold",
-            fontSize=9,
-            textColor=colors.HexColor("#374151"),
-            spaceBefore=6,
-            spaceAfter=3,
+            fontSize=10,
+            textColor=PRIMARY,
+            spaceBefore=8,
+            spaceAfter=4,
         )
     )
 
     styles.add(
         ParagraphStyle(
-            name="Body",
+            name="InfoBox",
             fontName="Helvetica",
             fontSize=10,
             leading=16,
-            alignment=TA_LEFT,
+            textColor=SECONDARY,
+            leftIndent=8,
+            rightIndent=8,
+            borderPadding=10,
+            backColor=colors.HexColor("#F8FAFC"),
         )
     )
 
@@ -129,12 +164,13 @@ def _styles():
         ParagraphStyle(
             name="BolaCode",
             fontName="Courier",
-            fontSize=8,
-            leading=10,
-            backColor=colors.HexColor("#f5f5f5"),
-            borderColor=colors.HexColor("#dddddd"),
+            fontSize=8.5,
+            leading=11,
+            textColor=colors.HexColor("#111827"),
+            backColor=colors.HexColor("#F4F4F5"),
+            borderColor=colors.HexColor("#D4D4D8"),
             borderWidth=0.5,
-            borderPadding=6,
+            borderPadding=8,
         )
     )
 
@@ -177,39 +213,65 @@ def _overall_risk(score):
 
 def _executive_summary(context, styles):
 
-    highest = context["summary"]["highest_score"]
+    summary = context["summary"]
+
+    highest = summary["highest_score"]
     risk = _overall_risk(highest)
 
+    intro = Paragraph(
+        f"""
+        This assessment was performed using the <b>BOLAHawk Automated API
+        Security Scanner</b> against the supplied REST API. The scanner
+        evaluates endpoints against the OWASP API Security Top 10 using
+        active security testing, authentication analysis, authorization
+        validation and CVSS v3.1 risk scoring.
+
+        <br/><br/>
+
+        The assessment completed successfully and identified
+        <b>{summary['total_findings']} confirmed findings</b>.
+        Immediate remediation is recommended for all
+        <b>Critical</b> vulnerabilities before production deployment.
+        """,
+        styles["Body"],
+    )
+
     rows = [
-        ["Status", context["status"]],
-        ["Scan ID", context["scan_id"][:8] + "..."],
-        ["Started", context["started_at"]],
-        ["Generated", context["generated_at"]],
+        ["Assessment Status", context["status"].upper()],
         ["Overall Risk", risk],
         ["Highest CVSS", f"{highest:.1f}"],
+        ["Total Findings", str(summary["total_findings"])],
+        ["Scan Started", context["started_at"]],
+        ["Report Generated", context["generated_at"]],
+        ["Scan ID", context["scan_id"]],
     ]
 
-    table = Table(rows, colWidths=[1.6 * inch, 4.9 * inch])
+    table = Table(rows, colWidths=[2.0 * inch, 4.3 * inch])
 
     table.setStyle(TableStyle([
-        ("BACKGROUND", (0,0), (0,-1), colors.HexColor("#f4f6f8")),
-        ("TEXTCOLOR", (0,0), (-1,-1), colors.black),
 
-        ("FONTNAME", (0,0), (0,-1), "Helvetica-Bold"),
+        ("BACKGROUND",(0,0),(0,-1),colors.HexColor("#EFF6FF")),
+        ("BACKGROUND",(1,0),(1,-1),colors.white),
 
-        ("FONTNAME", (1,0), (1,-1), "Helvetica"),
+        ("TEXTCOLOR",(0,0),(-1,-1),colors.HexColor("#111827")),
 
-        ("BOTTOMPADDING", (0,0), (-1,-1), 8),
+        ("FONTNAME",(0,0),(0,-1),"Helvetica-Bold"),
+        ("FONTNAME",(1,0),(1,-1),"Helvetica"),
 
-        ("TOPPADDING", (0,0), (-1,-1), 8),
+        ("BOTTOMPADDING",(0,0),(-1,-1),10),
+        ("TOPPADDING",(0,0),(-1,-1),10),
 
-        ("GRID", (0,0), (-1,-1), 0.3, colors.HexColor("#d9d9d9")),
+        ("GRID",(0,0),(-1,-1),0.3,colors.HexColor("#CBD5E1")),
 
-        ("BOX", (0,0), (-1,-1), 0.6, colors.HexColor("#cfcfcf")),
+        ("BOX",(0,0),(-1,-1),0.6,colors.HexColor("#CBD5E1")),
+
     ]))
 
-    return table
-
+    return [
+        intro,
+        Spacer(1,16),
+        table,
+    ]
 
 # ------------------------------------------------------------
 # Dashboard Cards
@@ -217,60 +279,42 @@ def _executive_summary(context, styles):
 
 def _summary_cards(summary):
 
-    total = summary["total_findings"]
-
-    critical = summary["by_severity"].get("Critical",0)
-    high = summary["by_severity"].get("High",0)
-    medium = summary["by_severity"].get("Medium",0)
-    low = summary["by_severity"].get("Low",0)
-
     cards = [
+
         [
-            "Total\n{}".format(total),
-            "Critical\n{}".format(critical),
-            "High\n{}".format(high),
-            "Medium\n{}".format(medium),
-            "Low\n{}".format(low),
+            f"<b><font size=18>{summary['total_findings']}</font></b><br/>Total Findings",
+
+            f"<font color='#DC2626'><b><font size=18>{summary['by_severity'].get('Critical',0)}</font></b></font><br/>Critical",
+
+            f"<font color='#EA580C'><b><font size=18>{summary['by_severity'].get('High',0)}</font></b></font><br/>High",
+
+            f"<font color='#D97706'><b><font size=18>{summary['by_severity'].get('Medium',0)}</font></b></font><br/>Medium",
+
+            f"<font color='#16A34A'><b><font size=18>{summary['by_severity'].get('Low',0)}</font></b></font><br/>Low",
+
         ]
+
     ]
 
-    table = Table(cards, colWidths=[1.2*inch]*5)
+    table = Table(cards, colWidths=[1.35 * inch] * 5)
 
     table.setStyle(TableStyle([
 
-        ("BOX",(0,0),(-1,-1),0.6,colors.HexColor("#d0d0d0")),
+        ("BACKGROUND",(0,0),(-1,-1),colors.HexColor("#F8FAFC")),
 
-        ("GRID",(0,0),(-1,-1),0.4,colors.HexColor("#dddddd")),
+        ("BOX",(0,0),(-1,-1),0.5,colors.HexColor("#CBD5E1")),
 
-        ("BACKGROUND",(0,0),(0,0),colors.HexColor("#f7f7f7")),
-
-        ("BACKGROUND",(1,0),(1,0),colors.HexColor("#fdecec")),
-
-        ("BACKGROUND",(2,0),(2,0),colors.HexColor("#fff1e6")),
-
-        ("BACKGROUND",(3,0),(3,0),colors.HexColor("#fff8dd")),
-
-        ("BACKGROUND",(4,0),(4,0),colors.HexColor("#eef8ee")),
-
-        ("TEXTCOLOR",(1,0),(1,0),colors.red),
-
-        ("TEXTCOLOR",(2,0),(2,0),colors.orange),
-
-        ("TEXTCOLOR",(3,0),(3,0),colors.HexColor("#b7950b")),
-
-        ("TEXTCOLOR",(4,0),(4,0),colors.green),
-
-        ("ALIGN",(0,0),(-1,-1),"CENTER"),
+        ("GRID",(0,0),(-1,-1),0.3,colors.HexColor("#E2E8F0")),
 
         ("VALIGN",(0,0),(-1,-1),"MIDDLE"),
 
+        ("ALIGN",(0,0),(-1,-1),"CENTER"),
+
         ("FONTNAME",(0,0),(-1,-1),"Helvetica-Bold"),
 
-        ("FONTSIZE",(0,0),(-1,-1),12),
+        ("BOTTOMPADDING",(0,0),(-1,-1),18),
 
-        ("BOTTOMPADDING",(0,0),(-1,-1),14),
-
-        ("TOPPADDING",(0,0),(-1,-1),14),
+        ("TOPPADDING",(0,0),(-1,-1),18),
 
     ]))
 
@@ -283,34 +327,47 @@ def _summary_cards(summary):
 
 def _severity_chart(summary):
 
-    drawing = Drawing(360,180)
+    drawing = Drawing(430,210)
 
     pie = Pie()
 
-    pie.x = 70
-    pie.y = 10
+    pie.x = 95
+    pie.y = 25
 
-    pie.width = 140
-    pie.height = 140
+    pie.width = 160
+    pie.height = 160
 
     pie.data = [
+
         summary["by_severity"].get("Critical",0),
+
         summary["by_severity"].get("High",0),
+
         summary["by_severity"].get("Medium",0),
+
         summary["by_severity"].get("Low",0),
+
     ]
 
     pie.labels = [
-        "Critical",
-        "High",
-        "Medium",
-        "Low"
+
+        f"Critical ({summary['by_severity'].get('Critical',0)})",
+
+        f"High ({summary['by_severity'].get('High',0)})",
+
+        f"Medium ({summary['by_severity'].get('Medium',0)})",
+
+        f"Low ({summary['by_severity'].get('Low',0)})",
+
     ]
 
-    pie.slices[0].fillColor = colors.HexColor("#d32f2f")
-    pie.slices[1].fillColor = colors.HexColor("#f57c00")
-    pie.slices[2].fillColor = colors.HexColor("#fbc02d")
-    pie.slices[3].fillColor = colors.HexColor("#43a047")
+    pie.slices[0].fillColor = colors.HexColor("#DC2626")
+    pie.slices[1].fillColor = colors.HexColor("#EA580C")
+    pie.slices[2].fillColor = colors.HexColor("#D97706")
+    pie.slices[3].fillColor = colors.HexColor("#16A34A")
+
+    pie.slices.strokeWidth = 0.5
+    pie.slices.popout = 4
 
     drawing.add(pie)
 
@@ -325,24 +382,37 @@ def add_page_number(canvas, doc):
 
     canvas.saveState()
 
-    canvas.setFont("Helvetica",8)
+    width, height = A4
 
-    canvas.setFillColor(colors.grey)
+    canvas.setStrokeColor(colors.HexColor("#D1D5DB"))
+    canvas.setLineWidth(0.4)
+    canvas.line(35, height - 32, width - 35, height - 32)
+
+    canvas.setFont("Helvetica-Bold", 10)
+    canvas.setFillColor(colors.HexColor("#0F172A"))
+    canvas.drawString(
+        35,
+        height - 24,
+        "BOLAHawk Security Assessment Report"
+    )
+
+    canvas.setFont("Helvetica", 8)
+    canvas.setFillColor(colors.HexColor("#64748B"))
 
     canvas.drawString(
         35,
         18,
-        "Generated by BOLAHawk"
+        "Confidential • Generated by BOLAHawk"
     )
 
     canvas.drawRightString(
-        A4[0]-35,
+        width - 35,
         18,
         f"Page {doc.page}"
     )
 
     canvas.restoreState()
-
+    
 # ------------------------------------------------------------
 # Finding Card
 # ------------------------------------------------------------
@@ -354,102 +424,94 @@ def _finding_block(f: dict, styles):
     severity = f.get("severity", "None")
     sev_color = _SEVERITY_COLORS.get(severity, _SEVERITY_COLORS["None"])
 
-    # ------------------------------
-    # Severity Badge
-    # ------------------------------
+    # ==========================================================
+    # HEADER
+    # ==========================================================
 
     badge = Table(
-        [[Paragraph(
-            f'<font color="white"><b>{severity.upper()}</b></font>',
-            styles["WhiteBadge"]
-        )]],
-        colWidths=[1.25 * inch],
+        [[Paragraph(f"<b>{severity.upper()}</b>", styles["WhiteBadge"])]],
+        colWidths=[1.35 * inch],
     )
 
     badge.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, -1), sev_color),
-        ("ALIGN", (0, 0), (-1, -1), "CENTER"),
-        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-        ("TOPPADDING", (0, 0), (-1, -1), 6),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
-        ("BOX", (0, 0), (-1, -1), 0.4, sev_color),
+        ("BACKGROUND",(0,0),(-1,-1),sev_color),
+        ("ALIGN",(0,0),(-1,-1),"CENTER"),
+        ("VALIGN",(0,0),(-1,-1),"MIDDLE"),
+        ("TOPPADDING",(0,0),(-1,-1),8),
+        ("BOTTOMPADDING",(0,0),(-1,-1),8),
+        ("BOX",(0,0),(-1,-1),0.5,sev_color),
     ]))
 
-    # ------------------------------
-    # Header
-    # ------------------------------
-
     title = Paragraph(
-        f"<b>{f['title']}</b>",
-        styles["CardTitle"],
+        f"<font size=15><b>{f['title']}</b></font>",
+        styles["CardTitle"]
     )
 
     cvss = Paragraph(
-        f"<b>CVSS {f['cvss_score']:.1f}</b>",
-        styles["CardMeta"],
+        f"<font color='#DC2626'><b>CVSS {f['cvss_score']:.1f}</b></font>",
+        styles["CardMeta"]
     )
 
     header = Table(
-        [
-            [badge, title, cvss]
-        ],
-        colWidths=[1.4 * inch, 4.0 * inch, 1.0 * inch],
+        [[badge, title, cvss]],
+        colWidths=[1.45*inch,4.3*inch,0.9*inch]
     )
 
     header.setStyle(TableStyle([
-        ("VALIGN", (0,0), (-1,-1), "TOP"),
-        ("BOTTOMPADDING", (0,0), (-1,-1), 8),
+        ("VALIGN",(0,0),(-1,-1),"TOP"),
+        ("BOTTOMPADDING",(0,0),(-1,-1),12),
     ]))
 
     flow.append(header)
 
-    # ------------------------------
-    # Endpoint
-    # ------------------------------
+    # ==========================================================
+    # INFORMATION TABLE
+    # ==========================================================
 
-    endpoint = Table([
-        [
-            Paragraph("<b>Endpoint</b>", styles["Label"]),
-            Paragraph(
-                f"{f['method']} {f['endpoint']}",
-                styles["Body"]
-            )
-        ],
-        [
-            Paragraph("<b>Context</b>", styles["Label"]),
-            Paragraph(
-                f"{f['auth_context']}",
-                styles["Body"]
-            )
-        ],
-        [
-            Paragraph("<b>Check ID</b>", styles["Label"]),
-            Paragraph(
-                f"{f['check_id']}",
-                styles["Body"]
-            )
-        ]
-    ], colWidths=[1.3*inch,5.3*inch])
+    info = Table(
 
-    endpoint.setStyle(TableStyle([
-        ("BACKGROUND",(0,0),(0,-1),colors.HexColor("#f8f9fa")),
-        ("GRID",(0,0),(-1,-1),0.3,colors.HexColor("#dddddd")),
-        ("BOTTOMPADDING",(0,0),(-1,-1),6),
-        ("TOPPADDING",(0,0),(-1,-1),6),
+        [
+
+            ["Affected Endpoint",f"{f['method']} {f['endpoint']}"],
+
+            ["Authentication Context",f["auth_context"]],
+
+            ["Scanner Module",f["check_id"]],
+
+            ["OWASP Category","OWASP API Security Top 10"],
+
+        ],
+
+        colWidths=[2.15*inch,4.15*inch]
+
+    )
+
+    info.setStyle(TableStyle([
+
+        ("BACKGROUND",(0,0),(0,-1),colors.HexColor("#EFF6FF")),
+
+        ("GRID",(0,0),(-1,-1),0.35,colors.HexColor("#CBD5E1")),
+
+        ("FONTNAME",(0,0),(0,-1),"Helvetica-Bold"),
+
+        ("BOTTOMPADDING",(0,0),(-1,-1),8),
+
+        ("TOPPADDING",(0,0),(-1,-1),8),
+
     ]))
 
-    flow.append(endpoint)
+    flow.append(info)
 
-    flow.append(Spacer(1,10))
+    flow.append(Spacer(1,12))
 
-    # ------------------------------
-    # Description
-    # ------------------------------
+    # ==========================================================
+    # DESCRIPTION
+    # ==========================================================
 
     flow.append(
         Paragraph(
             "Description",
-            styles["Label"]
+            styles["SubHeading"]
         )
     )
 
@@ -460,99 +522,295 @@ def _finding_block(f: dict, styles):
         )
     )
 
-    flow.append(Spacer(1,6))
+    flow.append(Spacer(1,10))
 
-    # ------------------------------
-    # Evidence
-    # ------------------------------
+    # ==========================================================
+    # BUSINESS IMPACT
+    # ==========================================================
+
+    flow.append(
+        Paragraph(
+            "Business Impact",
+            styles["SubHeading"]
+        )
+    )
+
+    business = Table([[
+        Paragraph(
+
+            """
+            Successful exploitation of this vulnerability may allow attackers
+            to bypass application security controls, gain unauthorized access
+            to confidential information, perform privileged actions or
+            compromise critical business functionality.
+
+            Depending on the affected endpoint, exploitation could result in
+            unauthorized data disclosure, privilege escalation or complete
+            compromise of user accounts.
+            """,
+
+            styles["Body"]
+
+        )
+    ]])
+
+    business.setStyle(TableStyle([
+
+        ("BACKGROUND",(0,0),(-1,-1),colors.HexColor("#FFF7ED")),
+
+        ("BOX",(0,0),(-1,-1),0.45,colors.HexColor("#FDBA74")),
+
+        ("BOTTOMPADDING",(0,0),(-1,-1),10),
+
+        ("TOPPADDING",(0,0),(-1,-1),10),
+
+        ("LEFTPADDING",(0,0),(-1,-1),10),
+
+        ("RIGHTPADDING",(0,0),(-1,-1),10),
+
+    ]))
+
+    flow.append(business)
+
+    flow.append(Spacer(1,10))
+
+       # ==========================================================
+    # TECHNICAL IMPACT
+    # ==========================================================
+
+    flow.append(
+        Paragraph(
+            "Technical Impact",
+            styles["SubHeading"]
+        )
+    )
+
+    technical = Table([[
+        Paragraph(
+
+            """
+            • Authentication and authorization controls may be bypassed.<br/>
+            • Confidential application data may become accessible.<br/>
+            • Attackers may execute unauthorized operations.<br/>
+            • Integrity of protected resources may be compromised.<br/>
+            • Security posture of the application is significantly weakened.
+            """,
+
+            styles["Body"]
+
+        )
+    ]])
+
+    technical.setStyle(TableStyle([
+
+        ("BACKGROUND",(0,0),(-1,-1),colors.HexColor("#F8FAFC")),
+
+        ("BOX",(0,0),(-1,-1),0.45,colors.HexColor("#CBD5E1")),
+
+        ("BOTTOMPADDING",(0,0),(-1,-1),10),
+
+        ("TOPPADDING",(0,0),(-1,-1),10),
+
+        ("LEFTPADDING",(0,0),(-1,-1),10),
+
+        ("RIGHTPADDING",(0,0),(-1,-1),10),
+
+    ]))
+
+    flow.append(technical)
+
+    flow.append(Spacer(1,10))
+
+    # ==========================================================
+    # EVIDENCE
+    # ==========================================================
 
     flow.append(
         Paragraph(
             "Evidence",
-            styles["Label"]
+            styles["SubHeading"]
         )
     )
 
-    evidence = Table([
-        [
-            Paragraph(
-                f["evidence"],
-                styles["BolaCode"]
-            )
-        ]
-    ])
+    evidence = Table([[
+        Paragraph(
+            f"<b>Scanner Output</b><br/><br/>{f['evidence']}",
+            styles["BolaCode"]
+        )
+    ]])
 
     evidence.setStyle(TableStyle([
-        ("BACKGROUND",(0,0),(-1,-1),colors.HexColor("#f7f7f7")),
-        ("BOX",(0,0),(-1,-1),0.4,colors.HexColor("#d0d0d0")),
-        ("BOTTOMPADDING",(0,0),(-1,-1),8),
-        ("TOPPADDING",(0,0),(-1,-1),8),
+
+        ("BACKGROUND",(0,0),(-1,-1),colors.HexColor("#FAFAFA")),
+
+        ("BOX",(0,0),(-1,-1),0.45,colors.HexColor("#D4D4D8")),
+
+        ("BOTTOMPADDING",(0,0),(-1,-1),10),
+
+        ("TOPPADDING",(0,0),(-1,-1),10),
+
+        ("LEFTPADDING",(0,0),(-1,-1),10),
+
+        ("RIGHTPADDING",(0,0),(-1,-1),10),
+
     ]))
 
     flow.append(evidence)
 
-    flow.append(Spacer(1,6))
+    flow.append(Spacer(1,10))
 
-    # ------------------------------
-    # Recommendation
-    # ------------------------------
+    # ==========================================================
+    # REMEDIATION
+    # ==========================================================
 
     flow.append(
         Paragraph(
-            "Recommendation",
-            styles["Label"]
+            "Recommended Remediation",
+            styles["SubHeading"]
         )
     )
 
-    recommendation = Table([
-        [
-            Paragraph(
-                f["remediation"],
-                styles["Body"]
-            )
-        ]
-    ])
+    remediation = Table([[
+        Paragraph(
 
-    recommendation.setStyle(TableStyle([
-        ("BACKGROUND",(0,0),(-1,-1),colors.HexColor("#eef7ff")),
-        ("BOX",(0,0),(-1,-1),0.4,colors.HexColor("#bcd7ff")),
-        ("BOTTOMPADDING",(0,0),(-1,-1),8),
-        ("TOPPADDING",(0,0),(-1,-1),8),
+            f"""
+            {f['remediation']}
+
+            <br/><br/>
+
+            <b>Priority:</b> Immediate
+
+            <br/>
+
+            <b>Recommended Validation:</b>
+            Re-run the BOLAHawk security assessment after applying the fix
+            to verify that the vulnerability has been fully remediated.
+            """,
+
+            styles["Body"]
+
+        )
+    ]])
+
+    remediation.setStyle(TableStyle([
+
+        ("BACKGROUND",(0,0),(-1,-1),colors.HexColor("#ECFDF5")),
+
+        ("BOX",(0,0),(-1,-1),0.45,colors.HexColor("#86EFAC")),
+
+        ("BOTTOMPADDING",(0,0),(-1,-1),10),
+
+        ("TOPPADDING",(0,0),(-1,-1),10),
+
+        ("LEFTPADDING",(0,0),(-1,-1),10),
+
+        ("RIGHTPADDING",(0,0),(-1,-1),10),
+
     ]))
 
-    flow.append(recommendation)
+    flow.append(remediation)
 
-    flow.append(Spacer(1,6))
+    flow.append(Spacer(1,10))
 
-    # ------------------------------
-    # CVSS Vector
-    # ------------------------------
+    # ==========================================================
+    # CVSS
+    # ==========================================================
 
     flow.append(
         Paragraph(
-            "CVSS Vector",
-            styles["Label"]
+            "CVSS v3.1 Vector",
+            styles["SubHeading"]
         )
     )
 
-    flow.append(
+    cvss = Table([[
         Paragraph(
             f["cvss_vector"],
             styles["BolaCode"]
         )
-    )
+    ]])
 
-    flow.append(Spacer(1,18))
+    cvss.setStyle(TableStyle([
+
+        ("BACKGROUND",(0,0),(-1,-1),colors.HexColor("#F8FAFC")),
+
+        ("BOX",(0,0),(-1,-1),0.45,colors.HexColor("#CBD5E1")),
+
+        ("BOTTOMPADDING",(0,0),(-1,-1),8),
+
+        ("TOPPADDING",(0,0),(-1,-1),8),
+
+        ("LEFTPADDING",(0,0),(-1,-1),8),
+
+        ("RIGHTPADDING",(0,0),(-1,-1),8),
+
+    ]))
+
+    flow.append(cvss)
+
+    flow.append(Spacer(1,10))
+
+    # ==========================================================
+    # REFERENCES
+    # ==========================================================
 
     flow.append(
-        HRFlowable(
-            width="100%",
-            color=colors.HexColor("#dddddd"),
-            thickness=0.6,
+        Paragraph(
+            "References",
+            styles["SubHeading"]
         )
     )
 
-    flow.append(Spacer(1,18))
+    refs = Table([[
+        Paragraph(
+
+            """
+            • OWASP API Security Top 10 (2023)<br/>
+            • CVSS v3.1 Specification (FIRST)<br/>
+            • CWE (Common Weakness Enumeration)<br/>
+            • BOLAHawk Automated Security Scanner
+            """,
+
+            styles["Body"]
+
+        )
+    ]])
+
+    refs.setStyle(TableStyle([
+
+        ("BACKGROUND",(0,0),(-1,-1),colors.HexColor("#F8FAFC")),
+
+        ("BOX",(0,0),(-1,-1),0.4,colors.HexColor("#CBD5E1")),
+
+        ("BOTTOMPADDING",(0,0),(-1,-1),8),
+
+        ("TOPPADDING",(0,0),(-1,-1),8),
+
+        ("LEFTPADDING",(0,0),(-1,-1),8),
+
+        ("RIGHTPADDING",(0,0),(-1,-1),8),
+
+    ]))
+
+    flow.append(refs)
+
+    flow.append(Spacer(1,15))
+
+    flow.append(
+
+        HRFlowable(
+
+            width="100%",
+
+            thickness=1,
+
+            color=colors.HexColor("#CBD5E1")
+
+        )
+
+    )
+
+    flow.append(Spacer(1,20))
 
     return flow
 
@@ -564,10 +822,10 @@ def build_pdf_report(context: dict, output_path: str) -> str:
     doc = SimpleDocTemplate(
         output_path,
         pagesize=A4,
-        topMargin=0.55 * inch,
-        bottomMargin=0.60 * inch,
-        leftMargin=0.60 * inch,
-        rightMargin=0.60 * inch,
+        topMargin=0.75 * inch,
+        bottomMargin=0.75 * inch,
+        leftMargin=0.75 * inch,
+        rightMargin=0.75 * inch,
     )
 
     styles = _styles()
@@ -577,38 +835,73 @@ def build_pdf_report(context: dict, output_path: str) -> str:
     # COVER
     # ==========================================================
 
-    story.append(Spacer(1, 10))
+    story.append(Spacer(1, 30))
 
     story.append(
         Paragraph(
-            "BOLAHawk",
-            styles["ReportTitle"]
+            "🦅 BOLAHawk",
+            styles["ReportTitle"],
         )
     )
 
     story.append(
         Paragraph(
-            "Automated OWASP API Security Scanner",
-            styles["ReportSubtitle"]
-        )
-    )
-
-    story.append(
-        Paragraph(
-            "Security Assessment Report",
-            styles["SectionHeading"]
+            "Automated OWASP API Security Assessment Platform",
+            styles["ReportSubtitle"],
         )
     )
 
     story.append(
         HRFlowable(
-            width="100%",
-            thickness=1.5,
-            color=colors.HexColor("#1565c0"),
+            width="60%",
+            thickness=2,
+            color=colors.HexColor("#2563EB"),
+            spaceBefore=8,
+            spaceAfter=20,
         )
     )
 
-    story.append(Spacer(1, 20))
+    story.append(
+        Paragraph(
+            "<b>Security Assessment Report</b>",
+            styles["SectionHeading"],
+        )
+    )
+
+    story.append(Spacer(1, 15))
+
+    story.append(
+        Paragraph(
+            f"""
+            <b>Assessment Status:</b> {context["status"].upper()}<br/><br/>
+            <b>Overall Risk:</b> {_overall_risk(context["summary"]["highest_score"])}<br/><br/>
+            <b>Total Findings:</b> {context["summary"]["total_findings"]}<br/><br/>
+            <b>Highest CVSS:</b> {context["summary"]["highest_score"]:.1f}<br/><br/>
+            <b>Assessment Date:</b> {context["generated_at"]}<br/><br/>
+            <b>Generated By:</b> BOLAHawk Automated Scanner
+            """,
+            styles["InfoBox"],
+        )
+    )
+
+    story.append(Spacer(1, 25))
+
+    story.append(
+        Paragraph(
+            """
+            <b>Confidentiality Notice</b><br/><br/>
+
+            This report contains the results of an automated API security
+            assessment performed using the BOLAHawk platform. It is intended
+            solely for authorized personnel responsible for the security of
+            the assessed application. Distribution or disclosure to
+            unauthorized individuals is not recommended.
+            """,
+            styles["Body"],
+        )
+    )
+
+    story.append(PageBreak())
 
     # ==========================================================
     # EXECUTIVE SUMMARY
@@ -621,7 +914,8 @@ def build_pdf_report(context: dict, output_path: str) -> str:
         )
     )
 
-    story.append(_executive_summary(context, styles))
+    for item in _executive_summary(context, styles):
+        story.append(item)
 
     story.append(Spacer(1, 15))
 
@@ -637,7 +931,32 @@ def build_pdf_report(context: dict, output_path: str) -> str:
     )
 
     story.append(_summary_cards(context["summary"]))
+    risk_text = Paragraph(
 
+    f"""
+    <b>Risk Assessment</b><br/><br/>
+
+    The assessment identified
+    <b>{context['summary']['total_findings']} confirmed vulnerabilities</b>
+    affecting the target API.
+
+    The highest observed CVSS Base Score is
+    <b>{context['summary']['highest_score']:.1f}</b>,
+    resulting in an overall risk classification of
+    <b>{_overall_risk(context['summary']['highest_score'])}</b>.
+
+    Critical vulnerabilities should be remediated immediately
+    before deployment. High severity issues should be prioritized
+    during the next development cycle, while Medium severity issues
+    should be addressed as part of regular hardening activities.
+
+    """,
+
+    styles["InfoBox"]
+
+)
+
+    story.append(risk_text)
     story.append(Spacer(1, 18))
 
     # ==========================================================
@@ -690,9 +1009,13 @@ def build_pdf_report(context: dict, output_path: str) -> str:
 
     story.append(PageBreak())
 
+    # ==========================================================
+    # METHODOLOGY
+    # ==========================================================
+
     story.append(
         Paragraph(
-            "Methodology",
+            "Assessment Methodology",
             styles["SectionHeading"]
         )
     )
@@ -700,39 +1023,203 @@ def build_pdf_report(context: dict, output_path: str) -> str:
     story.append(
         Paragraph(
             """
-            BOLAHawk evaluates REST APIs against common
-            OWASP API Security Top 10 weaknesses using a
-            combination of active and passive security testing.
+            The security assessment was performed using the
+            <b>BOLAHawk Automated API Security Scanner</b>.
+            The scanner combines active security testing,
+            authentication analysis, authorization validation,
+            response inspection and CVSS v3.1 based risk scoring.
 
-            Checks include:
+            <br/><br/>
 
-            • Broken Object Level Authorization (BOLA)
+            The assessment methodology follows industry best
+            practices derived from the
+            <b>OWASP API Security Top 10 (2023)</b>.
 
-            • Broken Function Level Authorization (BFLA)
-
-            • Mass Assignment
-
-            • JWT Security Misconfigurations
-
-            • Authentication Weaknesses
-
-            • Rate Limiting
-
-            • Authorization Validation
-
-            • Response Analysis
-
-            • Automated Risk Scoring
             """,
             styles["Body"]
         )
     )
 
-    story.append(Spacer(1, 18))
+    story.append(Spacer(1,15))
+
+    # ==========================================================
+    # SCOPE
+    # ==========================================================
 
     story.append(
         Paragraph(
-            "About this Report",
+            "Assessment Scope",
+            styles["SectionHeading"]
+        )
+    )
+
+    scope = Table([
+
+    ["Assessment Type","Automated API Security Assessment"],
+
+    ["Target","REST API"],
+
+    ["Authentication","JWT Authentication"],
+
+    ["Risk Model","CVSS v3.1"],
+
+    ["Framework","OWASP API Security Top 10"],
+
+    ["Scanner","BOLAHawk"],
+
+    ])
+
+    scope.setStyle(TableStyle([
+
+    ("BACKGROUND",(0,0),(0,-1),colors.HexColor("#EFF6FF")),
+
+    ("GRID",(0,0),(-1,-1),0.4,colors.HexColor("#CBD5E1")),
+
+    ("FONTNAME",(0,0),(0,-1),"Helvetica-Bold"),
+
+    ("BOTTOMPADDING",(0,0),(-1,-1),8),
+
+    ("TOPPADDING",(0,0),(-1,-1),8),
+
+    ]))
+
+    story.append(scope)
+
+    story.append(Spacer(1,18))
+
+    # ==========================================================
+    # TESTS PERFORMED
+    # ==========================================================
+
+    story.append(
+        Paragraph(
+            "Security Tests Performed",
+            styles["SectionHeading"]
+        )
+    )
+
+    story.append(
+        Paragraph(
+            """
+            • Broken Object Level Authorization (BOLA)<br/>
+
+            • Broken Function Level Authorization (BFLA)<br/>
+
+            • Mass Assignment Detection<br/>
+
+            • JWT Security Analysis<br/>
+
+            • Authentication Validation<br/>
+
+            • Authorization Verification<br/>
+
+            • Rate Limiting Detection<br/>
+
+            • Response Analysis<br/>
+
+            • CVSS Risk Scoring<br/>
+
+            • Automated Evidence Collection
+            """,
+            styles["Body"]
+        )
+    )
+
+    story.append(Spacer(1,18))
+
+    # ==========================================================
+    # REMEDIATION ROADMAP
+    # ==========================================================
+
+    story.append(
+        Paragraph(
+            "Recommended Remediation Roadmap",
+            styles["SectionHeading"]
+        )
+    )
+
+    roadmap = Table([
+
+    ["Priority","Action"],
+
+    ["Immediate","Remediate all Critical vulnerabilities."],
+
+    ["High","Fix High severity issues before production."],
+
+    ["Medium","Address Medium findings during hardening."],
+
+    ["Validation","Run BOLAHawk again after remediation."],
+
+    ])
+
+    roadmap.setStyle(TableStyle([
+
+    ("BACKGROUND",(0,0),(-1,0),colors.HexColor("#2563EB")),
+
+    ("TEXTCOLOR",(0,0),(-1,0),colors.white),
+
+    ("GRID",(0,0),(-1,-1),0.4,colors.HexColor("#CBD5E1")),
+
+    ("FONTNAME",(0,0),(-1,0),"Helvetica-Bold"),
+
+    ("BOTTOMPADDING",(0,0),(-1,-1),8),
+
+    ("TOPPADDING",(0,0),(-1,-1),8),
+
+    ]))
+
+    story.append(roadmap)
+
+    story.append(Spacer(1,18))
+
+    # ==========================================================
+    # EXECUTIVE CONCLUSION
+    # ==========================================================
+
+    story.append(
+        Paragraph(
+            "Executive Conclusion",
+            styles["SectionHeading"]
+        )
+    )
+
+    story.append(
+        Paragraph(
+
+            f"""
+            The assessment identified
+            <b>{context['summary']['total_findings']} confirmed
+            security findings</b>, with an overall
+            risk rating of
+            <b>{_overall_risk(context['summary']['highest_score'])}</b>.
+
+            <br/><br/>
+
+            Critical vulnerabilities should be
+            remediated immediately before deployment.
+
+            Following remediation,
+            the application should undergo another
+            automated assessment to verify that
+            corrective actions have successfully
+            eliminated the identified vulnerabilities.
+
+            """,
+
+            styles["Body"]
+
+        )
+    )
+
+    story.append(Spacer(1,18))
+
+    # ==========================================================
+    # DISCLAIMER
+    # ==========================================================
+
+    story.append(
+        Paragraph(
+            "Disclaimer",
             styles["SectionHeading"]
         )
     )
@@ -740,17 +1227,27 @@ def build_pdf_report(context: dict, output_path: str) -> str:
     story.append(
         Paragraph(
             f"""
-            Report generated by <b>BOLAHawk</b><br/><br/>
+            Report generated automatically by
+            <b>BOLAHawk</b>.
+
+            <br/><br/>
 
             Scan ID:
-            {context["scan_id"]}<br/><br/>
+            {context["scan_id"]}
+
+            <br/><br/>
 
             Generated:
-            {context["generated_at"]}<br/><br/>
+            {context["generated_at"]}
 
-            This report is intended for educational,
-            research and authorized security assessment
-            purposes only.
+            <br/><br/>
+
+            This report is intended solely for
+            educational, research and authorized
+            security assessment purposes.
+
+            Results should be manually verified
+            before making security decisions.
             """,
             styles["Body"]
         )

@@ -27,6 +27,7 @@ class JWTFlawsCheck:
         findings = []
         findings += await self._check_alg_none(prober, sample_valid_token)
         findings += await self._check_weak_secret(prober, sample_valid_token)
+        findings += self._check_missing_expiry(sample_valid_token)
         return findings
 
     async def _check_alg_none(self, prober: Prober, sample_valid_token: str) -> List[Finding]:
@@ -73,3 +74,26 @@ class JWTFlawsCheck:
                                        scope=SCOPE.CHANGED, conf=IMPACT.HIGH, integ=IMPACT.HIGH, avail=IMPACT.HIGH),
                 )]
         return []
+
+    def _check_missing_expiry(self, sample_valid_token: str) -> List[Finding]:
+        """A token with no `exp` claim never stops being valid, so a single
+        leaked token is a permanent credential. This one is a claims
+        inspection rather than a probe — there's nothing to fire at the
+        server, the evidence is in the token the server already issued."""
+        # nosemgrep: python.jwt.security.unverified-jwt-decode.unverified-jwt-decode
+        # Intentional: inspecting claims of a token we were legitimately issued.
+        claims = pyjwt.decode(sample_valid_token, options={"verify_signature": False})  # nosemgrep
+        if "exp" in claims:
+            return []
+        return [Finding(
+            check_id=self.check_id,
+            title="JWT issued without an expiry claim",
+            endpoint="/api/auth/login",
+            method="POST",
+            auth_context="alice_user",
+            description="Tokens returned by the login endpoint carry no 'exp' claim, so they stay valid indefinitely. A token captured once is a permanent credential, and there is no way to age out a session.",
+            evidence=f"claims={sorted(claims.keys())} (no 'exp')",
+            remediation="Set a short 'exp' on every issued token and verify it on decode; pair it with a refresh token if longer sessions are needed.",
+            vector=CVSSVector(av=AV.NETWORK, ac=AC.HIGH, pr=PR.NONE, ui=UI.NONE,
+                               scope=SCOPE.UNCHANGED, conf=IMPACT.HIGH, integ=IMPACT.LOW, avail=IMPACT.NONE),
+        )]

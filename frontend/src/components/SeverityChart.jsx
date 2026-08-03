@@ -1,55 +1,38 @@
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, LabelList } from "recharts";
+import { SEVERITIES } from "../owasp";
 
-const SEVERITY_COLORS = {
-  Critical: "#e5484d",
-  High: "#f2994a",
-  Medium: "#f2c94c",
-  Low: "#56ccf2",
-};
+const COLORS = { Critical: "#f0484f", High: "#f5943c", Medium: "#f2c94c", Low: "#4fb8f0" };
 
-export default function SeverityChart({ summary, activeSeverity, onSelectSeverity }) {
-  const bySeverity = summary?.by_severity || {};
-  const data = ["Critical", "High", "Medium", "Low"].map((sev) => ({
-    severity: sev,
-    count: bySeverity[sev] || 0,
-  }));
+export default function SeverityChart({ groups = [], activeSeverity, onSelectSeverity }) {
+  const counts = {};
+  for (const g of groups) counts[g.severity] = (counts[g.severity] || 0) + 1;
+  const data = SEVERITIES.map((sev) => ({ severity: sev, count: counts[sev] || 0 }));
 
   return (
-    <div className="chart-panel">
-      <h2>
-        Findings by Severity
-        <span style={{ float: "right", fontSize: 10, color: "var(--muted)", fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>
-          click a bar to filter
-        </span>
-      </h2>
-      <ResponsiveContainer width="100%" height={200}>
-        <BarChart data={data} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
-          <XAxis
-            dataKey="severity"
-            stroke="#7c8496"
-            fontSize={12}
-            fontFamily="IBM Plex Mono, monospace"
-            tickLine={false}
-            axisLine={{ stroke: "#232838" }}
-          />
-          <YAxis stroke="#7c8496" fontSize={12} tickLine={false} axisLine={{ stroke: "#232838" }} allowDecimals={false} />
+    <div className="panel">
+      <div className="panel-head">
+        <h2>Unique flaws by severity</h2>
+        <span className="hint">Click a bar to filter the list below</span>
+      </div>
+      <ResponsiveContainer width="100%" height={190}>
+        <BarChart data={data} margin={{ top: 16, right: 6, left: -24, bottom: 0 }}>
+          <XAxis dataKey="severity" stroke="#6f7992" fontSize={11}
+                 fontFamily="IBM Plex Mono, monospace" tickLine={false}
+                 axisLine={{ stroke: "#232a3a" }} />
+          <YAxis stroke="#6f7992" fontSize={11} tickLine={false}
+                 axisLine={{ stroke: "#232a3a" }} allowDecimals={false} />
           <Tooltip
-            contentStyle={{ background: "#171b24", border: "1px solid #232838", borderRadius: 6, fontSize: 12 }}
-            labelStyle={{ color: "#e8ebf2" }}
-            cursor={{ fill: "rgba(255,255,255,0.03)" }}
-          />
-          <Bar
-            dataKey="count"
-            radius={[4, 4, 0, 0]}
-            cursor="pointer"
-            onClick={(d) => onSelectSeverity(activeSeverity === d.severity ? "All" : d.severity)}
-          >
+            contentStyle={{ background: "#161b25", border: "1px solid #232a3a", borderRadius: 8,
+                            fontSize: 12, fontFamily: "IBM Plex Mono, monospace" }}
+            labelStyle={{ color: "#e7eaf2" }}
+            cursor={{ fill: "rgba(255,255,255,0.035)" }} />
+          <Bar dataKey="count" radius={[5, 5, 0, 0]} cursor="pointer"
+               onClick={(d) => onSelectSeverity(activeSeverity === d.severity ? "All" : d.severity)}>
+            <LabelList dataKey="count" position="top"
+                       style={{ fill: "#aab3c6", fontSize: 11, fontFamily: "IBM Plex Mono, monospace" }} />
             {data.map((d) => (
-              <Cell
-                key={d.severity}
-                fill={SEVERITY_COLORS[d.severity]}
-                opacity={activeSeverity === "All" || activeSeverity === d.severity ? 1 : 0.25}
-              />
+              <Cell key={d.severity} fill={COLORS[d.severity]}
+                    opacity={activeSeverity === "All" || activeSeverity === d.severity ? 1 : 0.22} />
             ))}
           </Bar>
         </BarChart>

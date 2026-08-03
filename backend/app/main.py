@@ -17,7 +17,7 @@ from app.reporting.pdf_report import build_pdf_report
 
 app = FastAPI(
     title="BOLAHawk",
-    description="Backend API and Scanning Engine for auditing REST APIs",
+    description="Enterprise API Security Assessment Platform",
     version="1.0.0"
 )
 
@@ -29,10 +29,7 @@ _allowed_origins = [o.strip() for o in _raw_origins.split(",") if o.strip()]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "https://bolahawk-frontend.onrender.com",
-    ],
+    allow_origins=_allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

