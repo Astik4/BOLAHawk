@@ -74,12 +74,12 @@ export default function App() {
       <div className="app-header">
         <div>
           <h1>BOLAHawk</h1>
-          <div className="subtitle">automated OWASP API Top 10 scanner</div>
+          <div className="subtitle">Automated OWASP API Top 10 scanner</div>
         </div>
         <div className="scan-control">
           <input
             className="target-input"
-            placeholder="http://127.0.0.1:5000 (default)"
+            placeholder="Enter target API URL (e.g. https://api.example.com)"
             value={targetUrl}
             onChange={(e) => setTargetUrl(e.target.value)}
             disabled={isRunning}
