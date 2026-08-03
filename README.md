@@ -362,13 +362,13 @@ Refer to **DEPLOYMENT.md** for additional deployment guidance.
 
 ## Dashboard
 
-<img width="1918" height="1028" alt="Screenshot 2026-08-01 210129" src="https://github.com/user-attachments/assets/a8cde158-379e-4a6e-897e-957962b04912" />
+<img width="1892" height="1028" alt="image" src="https://github.com/user-attachments/assets/4a8187b5-95ed-45a2-8eaf-7931676f99dc" />
 
 ---
 
 ## Scan Results
 
-<img width="1919" height="1029" alt="Screenshot 2026-08-01 210215" src="https://github.com/user-attachments/assets/60be1d4a-e401-40ba-a444-083e448bad69" />
+<img width="1892" height="1016" alt="image" src="https://github.com/user-attachments/assets/4f5061dd-507a-44a7-9c08-1b51bf510244" />
 
 ---
 
