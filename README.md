@@ -374,7 +374,10 @@ Refer to **DEPLOYMENT.md** for additional deployment guidance.
 
 ## Generated Report
 
-<img width="1162" height="1034" alt="image" src="https://github.com/user-attachments/assets/2f2bbcad-ae1c-4882-a28d-e4080e24ce7e" />
+<img width="732" height="1036" alt="image" src="https://github.com/user-attachments/assets/d442cd9a-ab34-445c-bdba-cfbb1d425f25" />
+<img width="730" height="873" alt="image" src="https://github.com/user-attachments/assets/569ed9ef-118b-41ce-ad2c-5ff25d3a0448" />
+<img width="754" height="724" alt="image" src="https://github.com/user-attachments/assets/a9d125ba-73fb-444a-8964-a5338eda492f" />
+
 
 ---
 
