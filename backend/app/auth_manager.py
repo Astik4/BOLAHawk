@@ -5,12 +5,17 @@ from app import config
 from app import token_store
 
 # Free-tier hosts (Render, Railway free plans, etc.) spin down the target API
-# after inactivity and can take 30-50s to cold-start on the next request,
+# after inactivity and can take 30-60s to cold-start on the next request,
 # often returning a 502/503 with the host's own HTML gateway page while the
 # container boots. Retrying with backoff rides that out instead of failing
-# the whole scan on the very first request.
+# the whole scan on the very first request. Worst case this is roughly
+# (_COLD_START_RETRIES - 1) * _COLD_START_DELAY_SECONDS of sleep plus
+# _COLD_START_RETRIES * the per-request timeout below — comfortably past a
+# typical free-tier cold start, at zero extra cost once the host is warm
+# (the very common case) since the first attempt just succeeds.
 _COLD_START_RETRIES = 6
-_COLD_START_DELAY_SECONDS = 8
+_COLD_START_DELAY_SECONDS = 10
+_LOGIN_TIMEOUT_SECONDS = 25.0
 
 
 def _load_credentials():
@@ -51,7 +56,7 @@ def login_user(role: str) -> str:
 
     for attempt in range(1, _COLD_START_RETRIES + 1):
         try:
-            response = httpx.post(url, json=payload, timeout=15.0)
+            response = httpx.post(url, json=payload, timeout=_LOGIN_TIMEOUT_SECONDS)
         except httpx.RequestError as e:
             last_error = ConnectionError(f"Unable to reach the target API at {url}: {e}")
             time.sleep(_COLD_START_DELAY_SECONDS)
@@ -79,7 +84,7 @@ def login_user(role: str) -> str:
             f"{_summarize_error_body(response.text, response.headers.get('content-type', ''))}"
         )
 
-    raise last_error
+    raise last_error or Exception("Target API login failed after all cold-start retries, with no captured error.")
 
 
 def get_token(role: str) -> str:
