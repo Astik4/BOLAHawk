@@ -13,19 +13,26 @@ export function formatTimestamp(iso) {
 }
 
 export function formatElapsed(startedAtIso, now) {
+  if (!startedAtIso) return "0s";
   const started = new Date(startedAtIso).getTime();
+  if (isNaN(started)) return "0s";
   const seconds = Math.max(0, Math.round((now - started) / 1000));
   return `${seconds}s`;
 }
 
 export function elapsedSeconds(startedAtIso, now) {
+  if (!startedAtIso) return 0;
   const started = new Date(startedAtIso).getTime();
+  if (isNaN(started)) return 0;
   return Math.max(0, (now - started) / 1000);
 }
 
 export function duration(startIso, endIso) {
   if (!startIso || !endIso) return null;
-  const secs = (new Date(endIso).getTime() - new Date(startIso).getTime()) / 1000;
+  const start = new Date(startIso).getTime();
+  const end = new Date(endIso).getTime();
+  if (isNaN(start) || isNaN(end)) return null;
+  const secs = Math.max(0, (end - start) / 1000);
   return `${secs.toFixed(1)}s`;
 }
 

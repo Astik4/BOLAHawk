@@ -72,7 +72,7 @@ async def _run_bola_cross_owner_probes(client, target_url, auth_headers, owned) 
     return results
 
 
-async def _create_disposable_order(client, target_url, auth_headers, owner_context) -> int:
+async def _create_disposable_order(client, target_url, auth_headers, owner_context):
     """Creates a throwaway order owned by owner_context, used as bait for
     the PUT/DELETE cross-owner probes below (doesn't touch the seeded
     orders the GET probe and Phase 4 matrix rely on)."""
@@ -81,7 +81,9 @@ async def _create_disposable_order(client, target_url, auth_headers, owner_conte
         headers=auth_headers[owner_context],
         json_data={"item_name": "BOLA-probe-item", "quantity": 1, "price": 9.99},
     )
-    return res["body"]["id"]
+    if isinstance(res.get("body"), dict) and "id" in res["body"]:
+        return res["body"]["id"]
+    return None
 
 
 async def _run_bola_write_probes(client, target_url, auth_headers, contexts) -> list:
@@ -94,6 +96,8 @@ async def _run_bola_write_probes(client, target_url, auth_headers, contexts) -> 
             if attacker == victim:
                 continue
             victim_order_id = await _create_disposable_order(client, target_url, auth_headers, victim)
+            if victim_order_id is None:
+                continue
 
             put_res = await request_runner.send_request(
                 client=client, method="PUT", url=f"{target_url}/api/orders/{victim_order_id}",
@@ -143,8 +147,8 @@ async def run_full_scan(target_url: str = None) -> dict:
         # the cache so auth_manager re-logs-in against the fresh data.
         auth_manager.clear_tokens()
         auth_headers = {
-            "alice_user": {"Authorization": f"Bearer {auth_manager.get_token('alice_user')}"},
-            "bob_user": {"Authorization": f"Bearer {auth_manager.get_token('bob_user')}"},
+            "alice_user": {"Authorization": f"Bearer {auth_manager.get_token('alice_user', target_url=target_url)}"},
+            "bob_user": {"Authorization": f"Bearer {auth_manager.get_token('bob_user', target_url=target_url)}"},
         }
 
         owned = await _discover_owned_order_ids(client, target_url, auth_headers)
@@ -170,7 +174,7 @@ async def run_full_scan(target_url: str = None) -> dict:
         active_findings = await runner.run_active(
             prober=prober,
             endpoints=endpoints,
-            sample_valid_token=auth_manager.get_token("alice_user"),
+            sample_valid_token=auth_manager.get_token("alice_user", target_url=target_url),
             jwt_protected_endpoint="/api/orders",
             login_payload={"username": "alice", "password": "password123"},
         )

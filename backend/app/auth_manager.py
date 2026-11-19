@@ -38,7 +38,7 @@ def _summarize_error_body(text: str, content_type: str = "") -> str:
     return stripped[:300] + ("…" if len(stripped) > 300 else "")
 
 
-def login_user(role: str) -> str:
+def login_user(role: str, target_url: str = None) -> str:
     """Performs HTTP login against the target API and caches the token.
     Retries through cold-start 502/503s and connection errors before failing."""
     users = _load_credentials()
@@ -51,7 +51,8 @@ def login_user(role: str) -> str:
         "password": user_cred["password"]
     }
 
-    url = f"{config.TARGET_API_URL}/api/auth/login"
+    base_url = (target_url or config.TARGET_API_URL).rstrip('/')
+    url = f"{base_url}/api/auth/login"
     last_error = None
 
     for attempt in range(1, _COLD_START_RETRIES + 1):
@@ -87,11 +88,11 @@ def login_user(role: str) -> str:
     raise last_error or Exception("Target API login failed after all cold-start retries, with no captured error.")
 
 
-def get_token(role: str) -> str:
+def get_token(role: str, target_url: str = None) -> str:
     """Gets token from cache, or logins if it does not exist."""
     token = token_store.get_token(role)
     if not token:
-        token = login_user(role)
+        token = login_user(role, target_url=target_url)
     return token
 
 

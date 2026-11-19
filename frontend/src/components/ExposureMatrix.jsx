@@ -34,7 +34,8 @@ export default function ExposureMatrix({ scanResults = [], findings = [] }) {
       }
     }
 
-    const identities = IDENTITY_ORDER.filter((i) => present.has(i));
+    const extraIdentities = [...present].filter((i) => !IDENTITY_ORDER.includes(i));
+    const identities = [...IDENTITY_ORDER.filter((i) => present.has(i)), ...extraIdentities];
     const rows = [...byRoute.values()].sort((a, b) => {
       const af = Object.keys(a.flags || {}).length;
       const bf = Object.keys(b.flags || {}).length;

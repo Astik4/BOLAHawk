@@ -10,6 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, FileResponse
 from pydantic import BaseModel
 
+from app import config
 from app.scanner.security_orchestrator import run_full_scan
 from app.reporting.data import build_report_context
 from app.reporting.html_report import render_html_report
@@ -22,9 +23,9 @@ app = FastAPI(
 )
 
 # CORS origins are read from the ALLOWED_ORIGINS env var (comma-separated).
-# Defaults to the Vite dev-server origin for local development.
+# Defaults to the Vite dev-server and docker-compose dashboard origins for local development.
 # For production, set ALLOWED_ORIGINS to your actual frontend domain(s).
-_raw_origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:5173")
+_raw_origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173,http://localhost:8080,http://127.0.0.1:8080")
 _allowed_origins = [o.strip() for o in _raw_origins.split(",") if o.strip()]
 
 app.add_middleware(
@@ -58,10 +59,11 @@ async def start_scan(req: ScanRequest = ScanRequest()):
     scan_id = str(uuid.uuid4())
     global _scan_counter
     _scan_counter += 1
+    target = (req.target_url or config.TARGET_API_URL).rstrip("/")
     _scans[scan_id] = {
         "scan_id": scan_id,
         "scan_number": _scan_counter,
-        "target_url": req.target_url or "http://127.0.0.1:5000",
+        "target_url": target,
         "status": "running",
         "started_at": datetime.now(timezone.utc).isoformat(),
         "finished_at": None,
@@ -71,7 +73,7 @@ async def start_scan(req: ScanRequest = ScanRequest()):
 
     async def _run():
         try:
-            result = await run_full_scan(req.target_url)
+            result = await run_full_scan(target)
             _scans[scan_id]["result"] = result
             _scans[scan_id]["status"] = "completed"
         except Exception as e:

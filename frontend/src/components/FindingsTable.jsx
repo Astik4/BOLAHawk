@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { groupFindings, owaspFor, contextLabel, fingerprint, SEVERITIES, SEVERITY_ORDER } from "../owasp";
 
 function Copy({ text, onCopied }) {
@@ -20,6 +20,10 @@ function Finding({ g, forceOpen, isNew, onCopied }) {
   const [override, setOverride] = useState(null);
   const open = override === null ? forceOpen : override;
   const owasp = owaspFor(g.check_id);
+
+  useEffect(() => {
+    setOverride(null);
+  }, [forceOpen]);
 
   return (
     <div className={`finding ${g.severity}`}>

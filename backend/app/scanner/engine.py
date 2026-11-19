@@ -28,19 +28,19 @@ async def run_scan(target_url: str = None) -> list:
     }
     
     try:
-        alice_token = auth_manager.get_token("alice_user")
+        alice_token = auth_manager.get_token("alice_user", target_url=target_url)
         auth_headers["alice_user"] = {"Authorization": f"Bearer {alice_token}"}
     except Exception as e:
         print(f"Scan Engine Warning: Could not retrieve token for Alice: {e}")
 
     try:
-        bob_token = auth_manager.get_token("bob_user")
+        bob_token = auth_manager.get_token("bob_user", target_url=target_url)
         auth_headers["bob_user"] = {"Authorization": f"Bearer {bob_token}"}
     except Exception as e:
         print(f"Scan Engine Warning: Could not retrieve token for Bob: {e}")
 
     try:
-        admin_token = auth_manager.get_token("admin_user")
+        admin_token = auth_manager.get_token("admin_user", target_url=target_url)
         auth_headers["admin_user"] = {"Authorization": f"Bearer {admin_token}"}
     except Exception as e:
         print(f"Scan Engine Warning: Could not retrieve token for Admin: {e}")

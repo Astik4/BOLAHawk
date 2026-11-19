@@ -116,3 +116,25 @@ def test_jwt_ignores_token_with_expiry():
     exp = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(minutes=15)
     token = pyjwt.encode({"user_id": 1, "exp": exp}, key="secret", algorithm="HS256")
     assert JWTFlawsCheck()._check_missing_expiry(token) == []
+
+
+def test_bola_flags_write_probes_put_and_delete():
+    results = [
+        {"endpoint": "/api/orders/{order_id}", "method": "PUT", "auth_context": "bob_user",
+         "status_code": 200, "response_body": {}, "resource_owner_id": "alice_user", "requested_id": 99},
+        {"endpoint": "/api/orders/{order_id}", "method": "DELETE", "auth_context": "bob_user",
+         "status_code": 204, "response_body": {}, "resource_owner_id": "alice_user", "requested_id": 100},
+    ]
+    findings = BOLACheck().run(results)
+    assert len(findings) == 2
+    put_f = next(f for f in findings if f.method == "PUT")
+    del_f = next(f for f in findings if f.method == "DELETE")
+    assert put_f.vector.integ == IMPACT.HIGH
+    assert del_f.vector.avail == IMPACT.HIGH
+
+
+def test_jwt_handles_empty_or_malformed_token():
+    from app.scanner.security_tests.checks.jwt_flaws import JWTFlawsCheck
+    check = JWTFlawsCheck()
+    assert check._check_missing_expiry("not-a-valid-token") == []
+    assert check._check_missing_expiry("") == []
