@@ -1,5 +1,5 @@
 # Build the dashboard, then serve the static bundle with nginx.
-FROM node:20-alpine AS build
+FROM node:22.23.4-alpine AS build
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci
