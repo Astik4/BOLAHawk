@@ -6,7 +6,10 @@ venv/
 .venv/
 env/
 .env
+.env.*
+!.env.example
 db.sqlite3
+Vuln Target/
 
 # Node/React
 node_modules/
